@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.161.0/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.161.0/examples/js/controls/OrbitControls.js"></script>
   <style>
     body {
       margin: 0;
@@ -43,6 +44,16 @@
       antialias: true
     });
     renderer.setSize(window.innerWidth, window.innerHeight);
+
+    // Add OrbitControls
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true; // Add smooth damping
+    controls.dampingFactor = 0.05;
+    controls.rotateSpeed = 0.5; // Adjust rotation sensitivity
+    controls.enableZoom = false; // Disable zoom
+    controls.enablePan = false; // Disable panning
+    controls.autoRotate = true; // Enable auto-rotation
+    controls.autoRotateSpeed = 0.5; // Set auto-rotation speed
 
     // Create sphere
     const sphereGeometry = new THREE.SphereGeometry(2, 32, 32);
@@ -113,7 +124,7 @@
 
     camera.position.z = 5;
 
-    // Mouse move handler
+    // Mouse move handler for arrow
     let mouseX = 0;
     let mouseY = 0;
     document.addEventListener('mousemove', (event) => {
@@ -129,17 +140,18 @@
       navLinks.forEach(link => {
         const vector = new THREE.Vector3();
         vector.copy(link.position);
-        vector.applyEuler(sphere.rotation);
+        
+        // Apply the rotation from OrbitControls
+        vector.applyMatrix4(sphere.matrixWorld);
         vector.project(camera);
 
         const x = (vector.x * widthHalf) + widthHalf;
         const y = -(vector.y * heightHalf) + heightHalf;
         
-        // Update visibility based on z position (hide labels that would be behind the sphere)
+        // Update visibility based on z position
         const behindSphere = vector.z < 0;
         link.element.style.display = behindSphere ? 'none' : 'block';
         
-        // Position the label
         link.element.style.left = `${x}px`;
         link.element.style.top = `${y}px`;
         link.element.style.transform = 'translate(-50%, -50%)';
@@ -149,6 +161,9 @@
     // Animation loop
     function animate() {
       requestAnimationFrame(animate);
+
+      // Update controls
+      controls.update();
 
       // Update arrow direction based on mouse position
       const theta = Math.atan2(mouseY, mouseX);
@@ -160,12 +175,12 @@
       
       arrow.setDirection(new THREE.Vector3(x, y, z));
 
-      // Rotate all elements together
-      sphere.rotation.x += 0.001;
-      sphere.rotation.y += 0.001;
-      axesGroup.rotation.copy(sphere.rotation);
-      circle.rotation.x = Math.PI / 2 + sphere.rotation.x;
-      circle.rotation.y = sphere.rotation.y;
+      // Rotate circle with sphere
+      circle.quaternion.copy(sphere.quaternion);
+      circle.rotateX(Math.PI / 2);
+      
+      // Rotate axes with sphere
+      axesGroup.quaternion.copy(sphere.quaternion);
 
       updateLabels();
       renderer.render(scene, camera);
