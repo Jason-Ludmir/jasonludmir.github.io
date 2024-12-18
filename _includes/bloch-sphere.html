@@ -12,21 +12,10 @@
       z-index: -1;
       opacity: 0.6;
     }
-    .labels {
-      position: fixed;
-      color: #666;
-      pointer-events: none;
-      font-family: 'Arial', sans-serif;
-      font-size: 14px;
-    }
   </style>
 </head>
 <body>
   <canvas id="bloch-sphere"></canvas>
-  <div id="label-0" class="labels">|0⟩</div>
-  <div id="label-1" class="labels">|1⟩</div>
-  <div id="label-plus" class="labels">|+⟩</div>
-  <div id="label-minus" class="labels">|-⟩</div>
   <script>
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -70,82 +59,63 @@
     const arrow = new THREE.ArrowHelper(arrowDirection, arrowOrigin, arrowLength, arrowColor, headLength, headWidth);
     scene.add(arrow);
 
-    // Enhanced coordinate axes
-    const axesHelper = new THREE.AxesHelper(2.5);
-    scene.add(axesHelper);
-    
-    // Add coordinate planes (semi-transparent)
-    const planeGeometry = new THREE.PlaneGeometry(4, 4);
-    const planeMaterialXY = new THREE.MeshBasicMaterial({
-      color: 0x0000ff,
-      transparent: true,
-      opacity: 0.1,
-      side: THREE.DoubleSide
-    });
-    const planeXY = new THREE.Mesh(planeGeometry, planeMaterialXY);
-    scene.add(planeXY);
+    // Create black axes
+    const createAxis = (start, end) => {
+      const geometry = new THREE.BufferGeometry().setFromPoints([start, end]);
+      const material = new THREE.LineBasicMaterial({ color: 0x000000 });
+      return new THREE.Line(geometry, material);
+    };
 
-    const planeMaterialXZ = new THREE.MeshBasicMaterial({
-      color: 0x00ff00,
-      transparent: true,
-      opacity: 0.1,
-      side: THREE.DoubleSide
-    });
-    const planeXZ = new THREE.Mesh(planeGeometry, planeMaterialXZ);
-    planeXZ.rotation.x = Math.PI / 2;
-    scene.add(planeXZ);
+    const axesGroup = new THREE.Group();
+    axesGroup.add(createAxis(new THREE.Vector3(-2.5, 0, 0), new THREE.Vector3(2.5, 0, 0)));
+    axesGroup.add(createAxis(new THREE.Vector3(0, -2.5, 0), new THREE.Vector3(0, 2.5, 0)));
+    axesGroup.add(createAxis(new THREE.Vector3(0, 0, -2.5), new THREE.Vector3(0, 0, 2.5)));
+    scene.add(axesGroup);
+
+    // Create state labels as sprites
+    function createLabel(text, position) {
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      canvas.width = 128;
+      canvas.height = 64;
+      context.font = '48px Arial';
+      context.fillStyle = '#666666';
+      context.textAlign = 'center';
+      context.textBaseline = 'middle';
+      context.fillText(text, 64, 32);
+
+      const texture = new THREE.CanvasTexture(canvas);
+      const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
+      const sprite = new THREE.Sprite(spriteMaterial);
+      sprite.position.copy(position);
+      sprite.scale.set(0.5, 0.25, 1);
+      return sprite;
+    }
+
+    const labelGroup = new THREE.Group();
+    labelGroup.add(createLabel('|0⟩', new THREE.Vector3(0, 2.5, 0)));
+    labelGroup.add(createLabel('|1⟩', new THREE.Vector3(0, -2.5, 0)));
+    labelGroup.add(createLabel('|+⟩', new THREE.Vector3(2.5, 0, 0)));
+    labelGroup.add(createLabel('|-⟩', new THREE.Vector3(-2.5, 0, 0)));
+    labelGroup.add(createLabel('|i⟩', new THREE.Vector3(0, 0, 2.5)));
+    labelGroup.add(createLabel('|-i⟩', new THREE.Vector3(0, 0, -2.5)));
+    scene.add(labelGroup);
 
     camera.position.z = 5;
 
-    // Mouse move handler with improved mapping
+    // Mouse move handler
     let mouseX = 0;
     let mouseY = 0;
     document.addEventListener('mousemove', (event) => {
       mouseX = (event.clientX / window.innerWidth) * 2 - 1;
       mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
-      
-      // Update state labels
-      updateLabels(event.clientX, event.clientY);
     });
-
-    // Function to update quantum state labels
-    function updateLabels(clientX, clientY) {
-      const labels = {
-        '0': document.getElementById('label-0'),
-        '1': document.getElementById('label-1'),
-        'plus': document.getElementById('label-plus'),
-        'minus': document.getElementById('label-minus')
-      };
-
-      const vector = new THREE.Vector3();
-      const widthHalf = window.innerWidth / 2;
-      const heightHalf = window.innerHeight / 2;
-
-      // Update positions for each label
-      const positions = {
-        '0': new THREE.Vector3(0, 2.2, 0),
-        '1': new THREE.Vector3(0, -2.2, 0),
-        'plus': new THREE.Vector3(2.2, 0, 0),
-        'minus': new THREE.Vector3(-2.2, 0, 0)
-      };
-
-      for (const [key, position] of Object.entries(positions)) {
-        vector.copy(position);
-        vector.project(camera);
-        
-        const x = (vector.x * widthHalf) + widthHalf;
-        const y = -(vector.y * heightHalf) + heightHalf;
-        
-        labels[key].style.left = `${x}px`;
-        labels[key].style.top = `${y}px`;
-      }
-    }
 
     // Animation loop with smoother rotation
     function animate() {
       requestAnimationFrame(animate);
 
-      // Update arrow direction based on mouse position with smoother mapping
+      // Update arrow direction based on mouse position
       const theta = Math.atan2(mouseY, mouseX);
       const phi = Math.sqrt(mouseX * mouseX + mouseY * mouseY) * Math.PI / 2;
       
@@ -155,22 +125,18 @@
       
       arrow.setDirection(new THREE.Vector3(x, y, z));
 
-      // Gentle rotation of the entire scene
+      // Rotate all elements together
       sphere.rotation.x += 0.001;
       sphere.rotation.y += 0.001;
-      axesHelper.rotation.x = sphere.rotation.x;
-      axesHelper.rotation.y = sphere.rotation.y;
+      axesGroup.rotation.copy(sphere.rotation);
       circle.rotation.x = Math.PI / 2 + sphere.rotation.x;
       circle.rotation.y = sphere.rotation.y;
-      planeXY.rotation.x = sphere.rotation.x;
-      planeXY.rotation.y = sphere.rotation.y;
-      planeXZ.rotation.x = Math.PI / 2 + sphere.rotation.x;
-      planeXZ.rotation.y = sphere.rotation.y;
+      labelGroup.rotation.copy(sphere.rotation);
 
       renderer.render(scene, camera);
     }
 
-    // Enhanced window resize handler
+    // Window resize handler
     window.addEventListener('resize', () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
