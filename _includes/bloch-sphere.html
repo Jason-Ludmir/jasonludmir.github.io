@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <style>
+    #bloch-sphere {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      opacity: 0.6;
+    }
+    .labels {
+      position: fixed;
+      color: #666;
+      pointer-events: none;
+      font-family: 'Arial', sans-serif;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="bloch-sphere"></canvas>
+  <div id="label-0" class="labels">|0⟩</div>
+  <div id="label-1" class="labels">|1⟩</div>
+  <div id="label-plus" class="labels">|+⟩</div>
+  <div id="label-minus" class="labels">|-⟩</div>
+  <script>
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({
+      canvas: document.getElementById('bloch-sphere'),
+      alpha: true,
+      antialias: true
+    });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+
+    // Create sphere with better visibility
+    const sphereGeometry = new THREE.SphereGeometry(2, 32, 32);
+    const sphereMaterial = new THREE.MeshBasicMaterial({
+      color: 0x666666,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.3
+    });
+    const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+    scene.add(sphere);
+
+    // Add equatorial circle
+    const circleGeometry = new THREE.CircleGeometry(2, 64);
+    const circleMaterial = new THREE.MeshBasicMaterial({
+      color: 0x444444,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.2
+    });
+    const circle = new THREE.Mesh(circleGeometry, circleMaterial);
+    circle.rotation.x = Math.PI / 2;
+    scene.add(circle);
+
+    // Create vector arrow with better visibility
+    const arrowDirection = new THREE.Vector3(0, 1, 0);
+    const arrowOrigin = new THREE.Vector3(0, 0, 0);
+    const arrowLength = 2;
+    const arrowColor = 0x00ff00;
+    const headLength = 0.3;
+    const headWidth = 0.2;
+    const arrow = new THREE.ArrowHelper(arrowDirection, arrowOrigin, arrowLength, arrowColor, headLength, headWidth);
+    scene.add(arrow);
+
+    // Enhanced coordinate axes
+    const axesHelper = new THREE.AxesHelper(2.5);
+    scene.add(axesHelper);
+    
+    // Add coordinate planes (semi-transparent)
+    const planeGeometry = new THREE.PlaneGeometry(4, 4);
+    const planeMaterialXY = new THREE.MeshBasicMaterial({
+      color: 0x0000ff,
+      transparent: true,
+      opacity: 0.1,
+      side: THREE.DoubleSide
+    });
+    const planeXY = new THREE.Mesh(planeGeometry, planeMaterialXY);
+    scene.add(planeXY);
+
+    const planeMaterialXZ = new THREE.MeshBasicMaterial({
+      color: 0x00ff00,
+      transparent: true,
+      opacity: 0.1,
+      side: THREE.DoubleSide
+    });
+    const planeXZ = new THREE.Mesh(planeGeometry, planeMaterialXZ);
+    planeXZ.rotation.x = Math.PI / 2;
+    scene.add(planeXZ);
+
+    camera.position.z = 5;
+
+    // Mouse move handler with improved mapping
+    let mouseX = 0;
+    let mouseY = 0;
+    document.addEventListener('mousemove', (event) => {
+      mouseX = (event.clientX / window.innerWidth) * 2 - 1;
+      mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
+      
+      // Update state labels
+      updateLabels(event.clientX, event.clientY);
+    });
+
+    // Function to update quantum state labels
+    function updateLabels(clientX, clientY) {
+      const labels = {
+        '0': document.getElementById('label-0'),
+        '1': document.getElementById('label-1'),
+        'plus': document.getElementById('label-plus'),
+        'minus': document.getElementById('label-minus')
+      };
+
+      const vector = new THREE.Vector3();
+      const widthHalf = window.innerWidth / 2;
+      const heightHalf = window.innerHeight / 2;
+
+      // Update positions for each label
+      const positions = {
+        '0': new THREE.Vector3(0, 2.2, 0),
+        '1': new THREE.Vector3(0, -2.2, 0),
+        'plus': new THREE.Vector3(2.2, 0, 0),
+        'minus': new THREE.Vector3(-2.2, 0, 0)
+      };
+
+      for (const [key, position] of Object.entries(positions)) {
+        vector.copy(position);
+        vector.project(camera);
+        
+        const x = (vector.x * widthHalf) + widthHalf;
+        const y = -(vector.y * heightHalf) + heightHalf;
+        
+        labels[key].style.left = `${x}px`;
+        labels[key].style.top = `${y}px`;
+      }
+    }
+
+    // Animation loop with smoother rotation
+    function animate() {
+      requestAnimationFrame(animate);
+
+      // Update arrow direction based on mouse position with smoother mapping
+      const theta = Math.atan2(mouseY, mouseX);
+      const phi = Math.sqrt(mouseX * mouseX + mouseY * mouseY) * Math.PI / 2;
+      
+      const x = Math.sin(phi) * Math.cos(theta);
+      const y = Math.sin(phi) * Math.sin(theta);
+      const z = Math.cos(phi);
+      
+      arrow.setDirection(new THREE.Vector3(x, y, z));
+
+      // Gentle rotation of the entire scene
+      sphere.rotation.x += 0.001;
+      sphere.rotation.y += 0.001;
+      axesHelper.rotation.x = sphere.rotation.x;
+      axesHelper.rotation.y = sphere.rotation.y;
+      circle.rotation.x = Math.PI / 2 + sphere.rotation.x;
+      circle.rotation.y = sphere.rotation.y;
+      planeXY.rotation.x = sphere.rotation.x;
+      planeXY.rotation.y = sphere.rotation.y;
+      planeXZ.rotation.x = Math.PI / 2 + sphere.rotation.x;
+      planeXZ.rotation.y = sphere.rotation.y;
+
+      renderer.render(scene, camera);
+    }
+
+    // Enhanced window resize handler
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    animate();
+  </script>
+</body>
+</html>
