@@ -84,6 +84,38 @@
     axesGroup.add(createAxis(new THREE.Vector3(0, 0, -2.5), new THREE.Vector3(0, 0, 2.5)));
     rotatingGroup.add(axesGroup);
 
+    // Create vector arrow with better visibility
+    const arrowDirection = new THREE.Vector3(0, 1, 0);
+    const arrowOrigin = new THREE.Vector3(0, 0, 0);
+    const arrowLength = 2;
+    const arrowColor = 0x00ff00;
+    const headLength = 0.3;
+    const headWidth = 0.2;
+    const arrow = new THREE.ArrowHelper(
+        arrowDirection, 
+        arrowOrigin, 
+        arrowLength, 
+        arrowColor, 
+        headLength, 
+        headWidth
+    );
+    scene.add(arrow);  // Add to scene, not rotating group
+
+    // Add mouse move handler for arrow direction
+    document.addEventListener('mousemove', (event) => {
+        const mouseX = (event.clientX / window.innerWidth) * 2 - 1;
+        const mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
+        
+        const theta = Math.atan2(mouseY, mouseX);
+        const phi = Math.sqrt(mouseX * mouseX + mouseY * mouseY) * Math.PI / 2;
+        
+        const x = Math.sin(phi) * Math.cos(theta);
+        const y = Math.sin(phi) * Math.sin(theta);
+        const z = Math.cos(phi);
+        
+        arrow.setDirection(new THREE.Vector3(x, y, z));
+    });
+    
     // Navigation links setup
     const navLinks = [
       { text: '|About Me⟩', position: new THREE.Vector3(0, 2.5, 0), href: '/about' },
