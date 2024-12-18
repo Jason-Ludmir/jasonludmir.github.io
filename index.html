@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Jason Ludmir</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background-color: #fdfdfd;
+    }
+    
+    #bloch-sphere {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+    
+    .nav-label {
+      position: fixed;
+      color: #666;
+      text-decoration: none;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: clamp(12px, 3vw, 16px);
+      padding: 8px;
+      border-radius: 5px;
+      transition: color 0.3s, background-color 0.3s;
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+      z-index: 100;
+    }
+    
+    .nav-label:hover {
+      color: #000;
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+  </style>
+</head>
+<body>
+  <canvas id="bloch-sphere"></canvas>
+  <script>
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({
+      canvas: document.getElementById('bloch-sphere'),
+      alpha: true,
+      antialias: true
+    });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+
+    // Create a group to hold all rotating elements
+    const rotatingGroup = new THREE.Group();
+    scene.add(rotatingGroup);
+
+    // Create sphere
+    const sphereGeometry = new THREE.SphereGeometry(2, 32, 32);
+    const sphereMaterial = new THREE.MeshBasicMaterial({
+      color: 0x666666,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.3
+    });
+    const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+    rotatingGroup.add(sphere);
+
+    // Add equatorial circle
+    const circleGeometry = new THREE.CircleGeometry(2, 64);
+    const circleMaterial = new THREE.MeshBasicMaterial({
+      color: 0x444444,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.2
+    });
+    const circle = new THREE.Mesh(circleGeometry, circleMaterial);
+    circle.rotation.x = Math.PI / 2;
+    rotatingGroup.add(circle);
+
+    // Create black axes
+    const createAxis = (start, end) => {
+      const geometry = new THREE.BufferGeometry().setFromPoints([start, end]);
+      const material = new THREE.LineBasicMaterial({ color: 0x000000 });
+      return new THREE.Line(geometry, material);
+    };
+
+    const axesGroup = new THREE.Group();
+    axesGroup.add(createAxis(new THREE.Vector3(-2.5, 0, 0), new THREE.Vector3(2.5, 0, 0)));
+    axesGroup.add(createAxis(new THREE.Vector3(0, -2.5, 0), new THREE.Vector3(0, 2.5, 0)));
+    axesGroup.add(createAxis(new THREE.Vector3(0, 0, -2.5), new THREE.Vector3(0, 0, 2.5)));
+    rotatingGroup.add(axesGroup);
+
+    // Create vector arrow
+    const arrowDirection = new THREE.Vector3(0, 1, 0);
+    const arrowOrigin = new THREE.Vector3(0, 0, 0);
+    const arrowLength = 2;
+    const arrowColor = 0x00ff00;
+    const headLength = 0.3;
+    const headWidth = 0.2;
+    const arrow = new THREE.ArrowHelper(
+      arrowDirection, 
+      arrowOrigin, 
+      arrowLength, 
+      arrowColor, 
+      headLength, 
+      headWidth
+    );
+    scene.add(arrow);
+
+    // Add mouse move handler for arrow direction
+    document.addEventListener('mousemove', (event) => {
+      const mouseX = (event.clientX / window.innerWidth) * 2 - 1;
+      const mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
+      
+      const theta = Math.atan2(mouseY, mouseX);
+      const phi = Math.sqrt(mouseX * mouseX + mouseY * mouseY) * Math.PI / 2;
+      
+      const x = Math.sin(phi) * Math.cos(theta);
+      const y = Math.sin(phi) * Math.sin(theta);
+      const z = Math.cos(phi);
+      
+      arrow.setDirection(new THREE.Vector3(x, y, z));
+    });
+
+    // Navigation links setup
+    const navLinks = [
+      { text: '|About Me⟩', position: new THREE.Vector3(0, 2.5, 0), href: '/about' },
+      { text: '|Research⟩', position: new THREE.Vector3(0, -2.5, 0), href: '/research' },
+      { text: '|CV⟩', position: new THREE.Vector3(2.5, 0, 0), href: '/cv' },
+      { text: '|Blog⟩', position: new THREE.Vector3(-2.5, 0, 0), href: '/blog' },
+      { text: '|Speaking⟩', position: new THREE.Vector3(0, 0, 2.5), href: '/speaking' },
+      { text: '|Miscellany⟩', position: new THREE.Vector3(0, 0, -2.5), href: '/miscellany' }
+    ];
+
+    // Create HTML elements for navigation
+    navLinks.forEach(link => {
+      const element = document.createElement('a');
+      element.textContent = link.text;
+      element.className = 'nav-label';
+      element.href = link.href;
+      element.style.position = 'absolute';
+      document.body.appendChild(element);
+      link.element = element;
+    });
+
+    camera.position.z = 5;
+
+    // Rotation handling
+    let isMouseDown = false;
+    let prevMouseX = 0;
+    let prevMouseY = 0;
+    let rotationVelocityX = 0;
+    let rotationVelocityY = 0;
+    const autoRotationSpeed = 0.001;
+    const dampingFactor = 0.95;
+
+    document.addEventListener('mousedown', (event) => {
+      isMouseDown = true;
+      prevMouseX = event.clientX;
+      prevMouseY = event.clientY;
+    });
+
+    document.addEventListener('mousemove', (event) => {
+      if (isMouseDown) {
+        const deltaX = event.clientX - prevMouseX;
+        const deltaY = event.clientY - prevMouseY;
+        
+        rotationVelocityY = deltaX * 0.001;
+        rotationVelocityX = deltaY * 0.001;
+        
+        prevMouseX = event.clientX;
+        prevMouseY = event.clientY;
+      }
+    });
+
+    document.addEventListener('mouseup', () => {
+      isMouseDown = false;
+    });
+
+    // Update label positions
+    function updateLabels() {
+      const widthHalf = window.innerWidth / 2;
+      const heightHalf = window.innerHeight / 2;
+
+      navLinks.forEach(link => {
+        const vector = new THREE.Vector3();
+        vector.copy(link.position);
+        vector.applyMatrix4(rotatingGroup.matrixWorld);
+        vector.project(camera);
+
+        const x = (vector.x * widthHalf) + widthHalf;
+        const y = -(vector.y * heightHalf) + heightHalf;
+        
+        const behindSphere = vector.z < 0;
+        link.element.style.display = behindSphere ? 'none' : 'block';
+        
+        link.element.style.left = `${x}px`;
+        link.element.style.top = `${y}px`;
+        link.element.style.transform = 'translate(-50%, -50%)';
+      });
+    }
+
+    // Animation loop
+    function animate() {
+      requestAnimationFrame(animate);
+
+      if (!isMouseDown) {
+        // Apply auto-rotation when not being dragged
+        rotationVelocityX *= dampingFactor;
+        rotationVelocityY *= dampingFactor;
+        rotatingGroup.rotation.y += autoRotationSpeed;
+      }
+
+      // Apply any existing rotation velocity
+      rotatingGroup.rotation.x += rotationVelocityX;
+      rotatingGroup.rotation.y += rotationVelocityY;
+
+      updateLabels();
+      renderer.render(scene, camera);
+    }
+
+    // Window resize handler
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    animate();
+  </script>
+</body>
+</html>
