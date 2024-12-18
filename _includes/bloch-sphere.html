@@ -3,14 +3,32 @@
 <head>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+    }
     #bloch-sphere {
       position: fixed;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      z-index: -1;
-      opacity: 0.6;
+    }
+    .nav-label {
+      position: fixed;
+      color: #666;
+      text-decoration: none;
+      font-family: 'Arial', sans-serif;
+      font-size: 16px;
+      padding: 10px;
+      border-radius: 5px;
+      transition: color 0.3s, background-color 0.3s;
+      cursor: pointer;
+      user-select: none;
+    }
+    .nav-label:hover {
+      color: #000;
+      background-color: rgba(255, 255, 255, 0.1);
     }
   </style>
 </head>
@@ -26,7 +44,7 @@
     });
     renderer.setSize(window.innerWidth, window.innerHeight);
 
-    // Create sphere with better visibility
+    // Create sphere
     const sphereGeometry = new THREE.SphereGeometry(2, 32, 32);
     const sphereMaterial = new THREE.MeshBasicMaterial({
       color: 0x666666,
@@ -49,7 +67,7 @@
     circle.rotation.x = Math.PI / 2;
     scene.add(circle);
 
-    // Create vector arrow with better visibility
+    // Create vector arrow
     const arrowDirection = new THREE.Vector3(0, 1, 0);
     const arrowOrigin = new THREE.Vector3(0, 0, 0);
     const arrowLength = 2;
@@ -72,34 +90,26 @@
     axesGroup.add(createAxis(new THREE.Vector3(0, 0, -2.5), new THREE.Vector3(0, 0, 2.5)));
     scene.add(axesGroup);
 
-    // Create state labels as sprites
-    function createLabel(text, position) {
-      const canvas = document.createElement('canvas');
-      const context = canvas.getContext('2d');
-      canvas.width = 128;
-      canvas.height = 64;
-      context.font = '48px Arial';
-      context.fillStyle = '#666666';
-      context.textAlign = 'center';
-      context.textBaseline = 'middle';
-      context.fillText(text, 64, 32);
+    // Navigation links setup
+    const navLinks = [
+      { text: '|About Me⟩', position: new THREE.Vector3(0, 2.5, 0), href: '/about' },
+      { text: '|Research⟩', position: new THREE.Vector3(0, -2.5, 0), href: '/research' },
+      { text: '|CV⟩', position: new THREE.Vector3(2.5, 0, 0), href: '/cv' },
+      { text: '|Blog⟩', position: new THREE.Vector3(-2.5, 0, 0), href: '/blog' },
+      { text: '|Speaking⟩', position: new THREE.Vector3(0, 0, 2.5), href: '/speaking' },
+      { text: '|Miscellany⟩', position: new THREE.Vector3(0, 0, -2.5), href: '/miscellany' }
+    ];
 
-      const texture = new THREE.CanvasTexture(canvas);
-      const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
-      const sprite = new THREE.Sprite(spriteMaterial);
-      sprite.position.copy(position);
-      sprite.scale.set(0.5, 0.25, 1);
-      return sprite;
-    }
-
-    const labelGroup = new THREE.Group();
-    labelGroup.add(createLabel('|0⟩', new THREE.Vector3(0, 2.5, 0)));
-    labelGroup.add(createLabel('|1⟩', new THREE.Vector3(0, -2.5, 0)));
-    labelGroup.add(createLabel('|+⟩', new THREE.Vector3(2.5, 0, 0)));
-    labelGroup.add(createLabel('|-⟩', new THREE.Vector3(-2.5, 0, 0)));
-    labelGroup.add(createLabel('|i⟩', new THREE.Vector3(0, 0, 2.5)));
-    labelGroup.add(createLabel('|-i⟩', new THREE.Vector3(0, 0, -2.5)));
-    scene.add(labelGroup);
+    // Create HTML elements for navigation
+    navLinks.forEach(link => {
+      const element = document.createElement('a');
+      element.textContent = link.text;
+      element.className = 'nav-label';
+      element.href = link.href;
+      element.style.position = 'absolute';
+      document.body.appendChild(element);
+      link.element = element;
+    });
 
     camera.position.z = 5;
 
@@ -111,7 +121,32 @@
       mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
     });
 
-    // Animation loop with smoother rotation
+    // Update label positions
+    function updateLabels() {
+      const widthHalf = window.innerWidth / 2;
+      const heightHalf = window.innerHeight / 2;
+
+      navLinks.forEach(link => {
+        const vector = new THREE.Vector3();
+        vector.copy(link.position);
+        vector.applyEuler(sphere.rotation);
+        vector.project(camera);
+
+        const x = (vector.x * widthHalf) + widthHalf;
+        const y = -(vector.y * heightHalf) + heightHalf;
+        
+        // Update visibility based on z position (hide labels that would be behind the sphere)
+        const behindSphere = vector.z < 0;
+        link.element.style.display = behindSphere ? 'none' : 'block';
+        
+        // Position the label
+        link.element.style.left = `${x}px`;
+        link.element.style.top = `${y}px`;
+        link.element.style.transform = 'translate(-50%, -50%)';
+      });
+    }
+
+    // Animation loop
     function animate() {
       requestAnimationFrame(animate);
 
@@ -131,8 +166,8 @@
       axesGroup.rotation.copy(sphere.rotation);
       circle.rotation.x = Math.PI / 2 + sphere.rotation.x;
       circle.rotation.y = sphere.rotation.y;
-      labelGroup.rotation.copy(sphere.rotation);
 
+      updateLabels();
       renderer.render(scene, camera);
     }
 
