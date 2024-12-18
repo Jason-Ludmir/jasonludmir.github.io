@@ -1,7 +1,6 @@
-<!-- ---
-layout: home
-title: Home
---- -->
+---
+layout: sphere
+---
 
 <!-- # Welcome to My Research Page -->
 
