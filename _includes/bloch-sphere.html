@@ -30,10 +30,76 @@
       color: #000;
       background-color: rgba(255, 255, 255, 0.1);
     }
+    .menu-button {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 1000;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 10px;
+    }
+    .menu-button svg {
+      width: 24px;
+      height: 24px;
+      fill: #666;
+      transition: fill 0.3s;
+    }
+    .menu-button:hover svg {
+      fill: #000;
+    }
+    .menu-overlay {
+      position: fixed;
+      top: 0;
+      right: -300px;
+      width: 300px;
+      height: 100%;
+      background: white;
+      box-shadow: -2px 0 5px rgba(0,0,0,0.1);
+      transition: right 0.3s ease;
+      z-index: 999;
+    }
+    .menu-overlay.active {
+      right: 0;
+    }
+    .menu-list {
+      list-style: none;
+      padding: 60px 20px 20px;
+      margin: 0;
+    }
+    .menu-list a {
+      display: block;
+      padding: 15px 0;
+      color: #666;
+      text-decoration: none;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      border-bottom: 1px solid #eee;
+      transition: color 0.3s;
+    }
+    .menu-list a:hover {
+      color: #000;
+    }
   </style>
 </head>
 <body>
   <canvas id="bloch-sphere"></canvas>
+  <button class="menu-button">
+    <svg viewBox="0 0 24 24">
+      <path d="M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z"/>
+    </svg>
+  </button>
+  <div class="menu-overlay">
+    <ul class="menu-list">
+      <li><a href="/about">|About Me⟩</a></li>
+      <li><a href="/research">|Research⟩</a></li>
+      <li><a href="/cv">|CV⟩</a></li>
+      <li><a href="/blog">|Blog⟩</a></li>
+      <li><a href="/speaking">|Speaking⟩</a></li>
+      <li><a href="/miscellany">|Miscellany⟩</a></li>
+    </ul>
+  </div>
+
   <script>
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -221,6 +287,21 @@
     });
 
     animate();
+
+    // Add menu toggle functionality
+    const menuButton = document.querySelector('.menu-button');
+    const menuOverlay = document.querySelector('.menu-overlay');
+
+    menuButton.addEventListener('click', () => {
+      menuOverlay.classList.toggle('active');
+    });
+
+    // Close menu when clicking outside
+    document.addEventListener('click', (event) => {
+      if (!menuOverlay.contains(event.target) && !menuButton.contains(event.target)) {
+        menuOverlay.classList.remove('active');
+      }
+    });
   </script>
 </body>
 </html>
