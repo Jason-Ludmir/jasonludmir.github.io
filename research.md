@@ -27,8 +27,7 @@ My research focuses on advancing quantum computing systems, particularly in:
 
 3. [**ReCon: Reconfiguring Analog Rydberg Atom Quantum Computers for Quantum Generative Adversarial Networks**](https://arxiv.org/abs/2408.13389)  
    Nicholas S. DiBrita, Daniel Leeds, Yuqian Huo, *Jason Ludmir*, Tirthak Patel  
-   International Conference on Computer-Aided Design (ICCAD), 2024  
-   [GitHub Repository](https://github.com/positivetechnologylab/ReCon)
+   International Conference on Computer-Aided Design (ICCAD), 2024
 
 ### Current Research Projects
 
