@@ -16,17 +16,16 @@ My research focuses on advancing quantum computing systems, particularly in:
 
 ### Peer-Reviewed
 
-1. **Modeling and Simulating Rydberg Atom Quantum Computers for Hardware-Software Co-design with PachinQo**  
+1. [**Modeling and Simulating Rydberg Atom Quantum Computers for Hardware-Software Co-design with PachinQo**](https://arxiv.org/abs/2412.07181)  
    *Jason Ludmir*, Nicholas S. DiBrita, Yuqian Huo, Tirthak Patel  
    ACM SIGMETRICS International Conference on Measurement and Modeling of Computer Systems (SIGMETRICS), 2025
 
-2. **PARALLAX: A Compiler for Neutral Atom Quantum Computers under Hardware Constraints**  
+2. [**PARALLAX: A Compiler for Neutral Atom Quantum Computers under Hardware Constraints**](https://dl.acm.org/doi/10.1109/SC41406.2024.00079)    
    *Jason Ludmir*, Nicholas S. DiBrita, Yuqian Huo, Tirthak Patel  
    International Conference for High Performance Computing, Networking, Storage and Analysis (SC), 2024  
-   [GitHub Repository](https://github.com/positivetechnologylab/Parallax)  
-   *Received Artifact Available, Functional, and Reproducible Badges*
+   
 
-3. **ReCon: Reconfiguring Analog Rydberg Atom Quantum Computers for Quantum Generative Adversarial Networks**  
+3. [**ReCon: Reconfiguring Analog Rydberg Atom Quantum Computers for Quantum Generative Adversarial Networks**](https://arxiv.org/abs/2408.13389)  
    Nicholas S. DiBrita, Daniel Leeds, Yuqian Huo, *Jason Ludmir*, Tirthak Patel  
    International Conference on Computer-Aided Design (ICCAD), 2024  
    [GitHub Repository](https://github.com/positivetechnologylab/ReCon)
@@ -46,13 +45,3 @@ I am currently leading several research initiatives:
 
 4. **Quantum Circuit Fidelity Optimization**  
    Contributing to research on minimizing output fidelity variability in quantum circuits, addressing both temporal and spatial variability in quantum cloud computing environments.
-
-## Research Software
-
-Our research has produced several open-source tools for the quantum computing community:
-
-- **[PARALLAX](https://github.com/positivetechnologylab/Parallax)**  
-  A compiler for neutral atom quantum computers that operates under hardware constraints.
-
-- **[ReCon](https://github.com/positivetechnologylab/ReCon)**  
-  A framework for reconfiguring analog Rydberg atom quantum computers for quantum generative adversarial networks.
