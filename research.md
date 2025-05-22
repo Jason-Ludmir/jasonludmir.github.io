@@ -34,12 +34,6 @@ My research focuses on advancing quantum computing systems, particularly in:
    Nicholas S. DiBrita, Daniel Leeds, Yuqian Huo, *Jason Ludmir*, Tirthak Patel  
    ICCAD ’24, 2024
 
-### Under Review
-
-- **A Reinforcement Learning Framework for Adaptive Dynamical Decoupling in NV Center Quantum Sensors** (Lead Author)  
-- **A Framework for Quantum Data Generation to Advance Entanglement‑Rich Datasets in Quantum Machine Learning** (Lead Author)  
-- **Minimizing Variability in Quantum Circuit Output Fidelity in Cloud Environments** (Co‑Author)
-
 ## Current Research Projects
 
 I am currently leading several research initiatives:
