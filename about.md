@@ -12,13 +12,6 @@ I am a Computer Science Ph.D. student at Rice University, working at the interse
 
 Prior to Rice, I completed my M.Sc. in Computer Science at Brown University (focus: database systems and optimization) and hold a B.S. in Finance from Wake Forest University.
 
-## Current Research
-
-My current projects include:
-- A compiler for neutral‑atom quantum computers under tight hardware constraints  
-- Unsupervised quantum anomaly detection using zero‑training quantum autoencoders  
-- Developing quantum data‑generation frameworks to produce entanglement‑rich datasets for QML  
-- Designing reinforcement learning–based adaptive dynamical decoupling sequences for NV center quantum sensors
 
 ## Recent Recognition
 
