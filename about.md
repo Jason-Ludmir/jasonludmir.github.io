@@ -16,6 +16,7 @@ Prior to Rice, I completed my M.Sc. in Computer Science at Brown University (foc
 ## Recent Recognition
 
 I’m honored to have received:
+- **Ken Kennedy – HPE Cray Graduate Fellowship**, Ken Kennedy Institute (2025/2026)  
 - **Best Lightning Talk**, Energy HPC Conference (April 2025)  
 - **1st Place**, ACM Student Research Competition at SC 2024  
 - **Selection**, Inaugural HPC Student Cohort (HPCSC)  

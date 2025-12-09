@@ -18,6 +18,10 @@ permalink: /research/
    *Jason Ludmir*, Nicholas S. DiBrita, Yuqian Huo, Tirthak Patel  
    SC ’24, 2024
 
-4. [**ReCon: Reconfiguring Analog Rydberg Atom Quantum Computers for Quantum Generative Adversarial Networks**](https://arxiv.org/abs/2408.13389)  
+4. [**Anchor: Reducing Temporal and Spatial Output Performance Variability on Quantum Computers**](https://arxiv.org/abs/2510.06172)  
+   Yuqian Huo, Daniel Leeds, *Jason Ludmir*, Nicholas S. DiBrita, Tirthak Patel
+   ACM SIGMETRICS, 2026
+
+5. [**ReCon: Reconfiguring Analog Rydberg Atom Quantum Computers for Quantum Generative Adversarial Networks**](https://arxiv.org/abs/2408.13389)  
    Nicholas S. DiBrita, Daniel Leeds, Yuqian Huo, *Jason Ludmir*, Tirthak Patel  
    ICCAD ’24, 2024
