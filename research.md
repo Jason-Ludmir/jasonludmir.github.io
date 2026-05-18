@@ -8,6 +8,7 @@ permalink: /research/
 
 1. [**SpinTune: Improving the Reliability of Quantum Sensor Networks for Practical Quantum-Classical Utility**](https://arxiv.org/abs/2605.04416)  
    *Jason Ludmir*, Nicholas S. DiBrita, Jason Han, Tirthak Patel
+   
    ACM International Conference on Supercomputing (ICS), 2026
 
 2. [**Quorum: Zero‑Training Unsupervised Anomaly Detection using Quantum Autoencoders**](https://arxiv.org/abs/2504.13113)  
