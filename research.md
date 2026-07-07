@@ -6,15 +6,15 @@ permalink: /research/
 
 ## Publications
 
-1. **Park-n-Ride: Hardware-Aware Compilation and Execution of Bivariate Bicycle Codes on Neutral-Atom Systems**
+1. **Park-n-Ride: Hardware-Aware Compilation and Execution of Bivariate Bicycle Codes on Neutral-Atom Systems**<br> 
    *Jason Ludmir*, Aditya Ranjan, Nicholas S. DiBrita, Jason Han, Tirthak Patel
    SC ’26, 2026
 
-2. **BAHAMAS: A Control Plane for Optimization and Execution of Variational Quantum Circuits**
+2. **BAHAMAS: A Control Plane for Optimization and Execution of Variational Quantum Circuits**<br> 
    Amit Samanta, Mohammad Abrarul Hasanat, *Jason Ludmir*, Ryan Stutsman, Tirthak Patel, Rohan Basu Roy
    SC ’26, 2026
 
-3. **PaQit: Energy-Runtime-Fidelity Co-Optimization for Neutral Atom Quantum Computers**
+3. **PaQit: Energy-Runtime-Fidelity Co-Optimization for Neutral Atom Quantum Computers**<br> 
    *Jason Ludmir*, Tirthak Patel
    IEEE International Conference on Quantum Computing & Engineering (QCE), 2026
 
