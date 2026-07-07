@@ -7,7 +7,7 @@ permalink: /research/
 ## Publications
 
 1. **Park-n-Ride: Hardware-Aware Compilation and Execution of Bivariate Bicycle Codes on Neutral-Atom Systems**<br> 
-   *Jason Ludmir*, Aditya Ranjan, Nicholas S. DiBrita, Jason Han, Tirthak Patel
+   *Jason Ludmir*, Aditya Ranjan, Nicholas S. DiBrita, Jason Han, Tirthak Patel<br> 
    SC ’26, 2026
 
 2. **BAHAMAS: A Control Plane for Optimization and Execution of Variational Quantum Circuits**<br> 
@@ -15,11 +15,11 @@ permalink: /research/
    SC ’26, 2026
 
 3. **PaQit: Energy-Runtime-Fidelity Co-Optimization for Neutral Atom Quantum Computers**<br> 
-   *Jason Ludmir*, Tirthak Patel
+   *Jason Ludmir*, Tirthak Patel<br> 
    IEEE International Conference on Quantum Computing & Engineering (QCE), 2026
 
 1. [**SpinTune: Improving the Reliability of Quantum Sensor Networks for Practical Quantum-Classical Utility**](https://arxiv.org/abs/2605.04416)  
-   *Jason Ludmir*, Nicholas S. DiBrita, Jason Han, Tirthak Patel
+   *Jason Ludmir*, Nicholas S. DiBrita, Jason Han, Tirthak Patel<br> 
    ACM International Conference on Supercomputing (ICS), 2026
 
 2. [**TuniQ: Autotuning Compilation Passes for Quantum Workloads at Scale for Effectiveness and Efficiency**](https://arxiv.org/abs/2605.04416)  
