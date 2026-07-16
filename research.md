@@ -36,7 +36,7 @@ permalink: /research/
    ACM SIGMETRICS, 2025
 
 5. [**PARALLAX: A Compiler for Neutral Atom Quantum Computers under Hardware Constraints**](https://dl.acm.org/doi/10.1109/SC41406.2024.00079)  
-   *Jason Ludmir*, Nicholas S. DiBrita, Yuqian Huo, Tirthak Patel  
+   *Jason Ludmir*, Tirthak Patel  
    SC ’24, 2024
 
 6. [**Layerwise Federated Learning for Heterogeneous Quantum Clients using Quorus**](https://arxiv.org/abs/2510.06228)  
