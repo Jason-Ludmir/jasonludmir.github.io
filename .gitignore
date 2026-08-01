@@ -5,6 +5,7 @@ _site
 vendor
 .DS_Store
 assets/.DS_Store
+_shift_visualizer/node_modules
 assets/files/.DS_Store
 assets/.DS_Store
 .DS_Store
