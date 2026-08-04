@@ -999,15 +999,15 @@ footer p:last-child {
   background-size: 30px 30px;
 }
 
-.present-shell.screen-3,
-.present-shell.screen-4 {
+.present-shell.screen-4,
+.present-shell.screen-5 {
   background:
     radial-gradient(circle at 58% 42%, rgba(35, 151, 122, 0.12), transparent 43%),
     radial-gradient(circle at 20% 20%, rgba(114, 74, 177, 0.08), transparent 30%),
     linear-gradient(160deg, #071511, #050e12 72%);
 }
 
-.present-shell.screen-1 {
+.present-shell.screen-2 {
   background:
     radial-gradient(circle at 52% 52%, rgba(174, 116, 255, 0.11), transparent 45%),
     radial-gradient(circle at 82% 20%, rgba(255, 189, 102, 0.07), transparent 30%),
@@ -1108,8 +1108,8 @@ footer p:last-child {
   background: rgba(109, 243, 255, 0.055);
 }
 
-.screen-3 .deck-tabs button.is-active,
-.screen-4 .deck-tabs button.is-active {
+.screen-4 .deck-tabs button.is-active,
+.screen-5 .deck-tabs button.is-active {
   border-color: rgba(50, 214, 173, 0.3);
   background: rgba(50, 214, 173, 0.06);
 }
@@ -1118,8 +1118,8 @@ footer p:last-child {
   color: var(--cyan);
 }
 
-.screen-3 .deck-tabs button.is-active span,
-.screen-4 .deck-tabs button.is-active span {
+.screen-4 .deck-tabs button.is-active span,
+.screen-5 .deck-tabs button.is-active span {
   color: var(--green);
 }
 
@@ -1251,8 +1251,8 @@ footer p:last-child {
   border-radius: 12px 0 0 12px;
 }
 
-.screen-3 .deck-edge,
-.screen-4 .deck-edge {
+.screen-4 .deck-edge,
+.screen-5 .deck-edge {
   color: var(--green);
 }
 

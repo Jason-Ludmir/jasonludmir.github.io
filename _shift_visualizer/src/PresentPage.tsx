@@ -29,6 +29,225 @@ const mixPoint = (a: Point, b: Point, t: number): Point => ({
   y: mix(a.y, b.y, t),
 });
 
+function logicalQubitPhase(progress: number) {
+  if (progress < 0.24) {
+    return {
+      number: "01",
+      label: "A physical qubit is fragile",
+      description: "Its state is stored in one physical system, so a local error directly changes it.",
+    };
+  }
+  if (progress < 0.5) {
+    return {
+      number: "02",
+      label: "Errors change the state",
+      description: "Bit flips, phase flips, and combined errors move the encoded information.",
+    };
+  }
+  if (progress < 0.74) {
+    return {
+      number: "03",
+      label: "Encode one logical qubit",
+      description: "A color code distributes one quantum state across seven physical qubits.",
+    };
+  }
+  return {
+    number: "04",
+    label: "Detect and correct locally",
+    description: "Syndromes reveal where an error occurred without revealing the logical state.",
+  };
+}
+
+function drawLogicalQubitIntro(canvas: HTMLCanvasElement, progress: number) {
+  const rect = canvas.getBoundingClientRect();
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const pixelWidth = Math.max(1, Math.round(rect.width * dpr));
+  const pixelHeight = Math.max(1, Math.round(rect.height * dpr));
+  if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
+    canvas.width = pixelWidth;
+    canvas.height = pixelHeight;
+  }
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const width = rect.width;
+  const height = rect.height;
+  ctx.clearRect(0, 0, width, height);
+
+  const inset = clamp(width * 0.06, 56, 92);
+  const gap = clamp(width * 0.025, 24, 40);
+  const panelY = 14;
+  const panelH = height - 28;
+  const panelW = (width - inset * 2 - gap) / 2;
+  const errorReveal = ease((progress - 0.16) / 0.3);
+  const encodeReveal = ease((progress - 0.46) / 0.24);
+  const correction = ease((progress - 0.72) / 0.22);
+  const pulse = 0.65 + 0.35 * Math.sin(performance.now() / 230);
+
+  const roundRect = (x: number, y: number, w: number, h: number, r = 14) => {
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h, r);
+  };
+  const panel = (x: number, accent: string) => {
+    ctx.save();
+    roundRect(x, panelY, panelW, panelH);
+    ctx.fillStyle = "rgba(8, 21, 32, .72)";
+    ctx.fill();
+    ctx.globalAlpha = 0.22;
+    ctx.strokeStyle = accent;
+    ctx.stroke();
+    ctx.restore();
+  };
+  const mono = (text: string, x: number, y: number, size = 9, color = "rgba(190,211,225,.72)", align: CanvasTextAlign = "left") => {
+    ctx.save();
+    ctx.textAlign = align;
+    ctx.fillStyle = color;
+    ctx.font = `600 ${size}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+    ctx.fillText(text, x, y);
+    ctx.restore();
+  };
+  const arrow = (from: Point, to: Point, color: string, alpha = 1, lineWidth = 2) => {
+    const angle = Math.atan2(to.y - from.y, to.x - from.x);
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = lineWidth;
+    ctx.beginPath(); ctx.moveTo(from.x, from.y); ctx.lineTo(to.x, to.y); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(to.x, to.y);
+    ctx.lineTo(to.x - 8 * Math.cos(angle - 0.45), to.y - 8 * Math.sin(angle - 0.45));
+    ctx.lineTo(to.x - 8 * Math.cos(angle + 0.45), to.y - 8 * Math.sin(angle + 0.45));
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+  };
+
+  panel(inset, colors.pink);
+  panel(inset + panelW + gap, colors.green);
+
+  const leftX = inset;
+  mono("ONE PHYSICAL QUBIT", leftX + 18, panelY + 24, 10, colors.pink);
+  mono("THE STATE LIVES IN ONE PLACE", leftX + 18, panelY + 39, 7, "rgba(137,161,181,.58)");
+  const sphereX = leftX + panelW * 0.34;
+  const sphereY = panelY + panelH * 0.45;
+  const radius = clamp(panelH * 0.23, 68, 112);
+  ctx.save();
+  ctx.strokeStyle = "rgba(165,194,214,.28)";
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(sphereX, sphereY, radius, 0, Math.PI * 2); ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(sphereX, sphereY, radius, radius * 0.28, 0, 0, Math.PI * 2); ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(sphereX, sphereY, radius * 0.28, radius, 0, 0, Math.PI * 2); ctx.stroke();
+  ctx.strokeStyle = "rgba(165,194,214,.18)";
+  ctx.beginPath(); ctx.moveTo(sphereX - radius - 13, sphereY); ctx.lineTo(sphereX + radius + 13, sphereY); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(sphereX, sphereY + radius + 13); ctx.lineTo(sphereX, sphereY - radius - 13); ctx.stroke();
+  mono("|0⟩", sphereX + 7, sphereY - radius - 8, 7, "rgba(203,221,232,.65)");
+  mono("|1⟩", sphereX + 7, sphereY + radius + 13, 7, "rgba(203,221,232,.65)");
+
+  const stateAngle = -1.02;
+  const cleanTip = { x: sphereX + Math.cos(stateAngle) * radius * 0.79, y: sphereY + Math.sin(stateAngle) * radius * 0.79 };
+  arrow({ x: sphereX, y: sphereY }, cleanTip, colors.cyan, 1, 2.4);
+  ctx.fillStyle = colors.cyan; ctx.beginPath(); ctx.arc(cleanTip.x, cleanTip.y, 4.2, 0, Math.PI * 2); ctx.fill();
+  mono("|ψ⟩", cleanTip.x + 10, cleanTip.y - 7, 9, colors.cyan);
+
+  const corruptedAngle = mix(stateAngle, stateAngle + Math.PI * 0.72, errorReveal);
+  const corruptTip = { x: sphereX + Math.cos(corruptedAngle) * radius * 0.72, y: sphereY + Math.sin(corruptedAngle) * radius * 0.72 };
+  arrow({ x: sphereX, y: sphereY }, corruptTip, colors.amber, errorReveal, 2.1);
+  ctx.restore();
+
+  const cardX = leftX + panelW * 0.66;
+  const cardW = panelW * 0.29;
+  const errors = [
+    ["X", "BIT FLIP", "|0⟩ ↔ |1⟩", colors.blue],
+    ["Z", "PHASE FLIP", "|+⟩ ↔ |−⟩", colors.pink],
+    ["Y", "BOTH", "bit + phase", colors.amber],
+  ];
+  errors.forEach(([symbol, name, detail, accent], i) => {
+    const local = ease(errorReveal * 1.35 - i * 0.16);
+    const h = 51;
+    const y = sphereY - 83 + i * 62;
+    ctx.save(); ctx.globalAlpha = local;
+    roundRect(cardX, y, cardW, h, 9);
+    ctx.fillStyle = "rgba(16,34,46,.9)"; ctx.fill();
+    ctx.strokeStyle = `${accent}55`; ctx.stroke();
+    mono(symbol, cardX + 12, y + 21, 14, accent);
+    mono(name, cardX + 34, y + 18, 7.5, "rgba(228,240,248,.87)");
+    mono(detail, cardX + 34, y + 34, 6.5, "rgba(146,168,185,.68)");
+    ctx.restore();
+  });
+  mono("ONE LOCAL ERROR → INFORMATION CHANGES", leftX + panelW / 2, panelY + panelH - 24, 8, colors.amber, "center");
+
+  const rightX = inset + panelW + gap;
+  mono("ONE LOGICAL QUBIT", rightX + 18, panelY + 24, 10, colors.green);
+  mono("7-QUBIT COLOR CODE · CONCEPTUAL VIEW", rightX + 18, panelY + 39, 7, "rgba(137,161,181,.58)");
+  const centerX = rightX + panelW * 0.51;
+  const centerY = panelY + panelH * 0.49;
+  const scale = clamp(panelH * 0.19, 62, 96);
+  const codePoints = [
+    { x: centerX, y: centerY - scale },
+    { x: centerX - scale * 0.5, y: centerY - scale * 0.14 },
+    { x: centerX + scale * 0.5, y: centerY - scale * 0.14 },
+    { x: centerX - scale, y: centerY + scale * 0.72 },
+    { x: centerX, y: centerY + scale * 0.72 },
+    { x: centerX + scale, y: centerY + scale * 0.72 },
+    { x: centerX, y: centerY + scale * 0.15 },
+  ];
+  const faces = [
+    [0, 1, 6, 2, "rgba(89,167,255,.17)", colors.blue],
+    [1, 3, 4, 6, "rgba(255,110,159,.15)", colors.pink],
+    [2, 6, 4, 5, "rgba(255,189,102,.14)", colors.amber],
+  ] as const;
+  ctx.save(); ctx.globalAlpha = encodeReveal;
+  faces.forEach(([a, b, c, d, fill, stroke], i) => {
+    ctx.beginPath();
+    ctx.moveTo(codePoints[a].x, codePoints[a].y);
+    [b, c, d].forEach((idx) => ctx.lineTo(codePoints[idx].x, codePoints[idx].y));
+    ctx.closePath(); ctx.fillStyle = fill; ctx.fill();
+    ctx.strokeStyle = correction > 0.15 && i < 2 ? `${stroke}${Math.round((0.35 + pulse * 0.4) * 255).toString(16).padStart(2,"0")}` : `${stroke}66`;
+    ctx.lineWidth = correction > 0.15 && i < 2 ? 2 : 1; ctx.stroke();
+  });
+  codePoints.forEach((p, i) => {
+    const isError = i === 6 && correction < 0.78;
+    ctx.fillStyle = isError ? colors.amber : "#d8f7ef";
+    ctx.strokeStyle = isError ? "#ffe0a8" : colors.green;
+    ctx.lineWidth = isError ? 2.5 : 1.2;
+    ctx.beginPath(); ctx.arc(p.x, p.y, isError ? 8 : 6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    if (isError) mono("!", p.x, p.y + 3, 8, "#3a2609", "center");
+  });
+  ctx.restore();
+
+  ctx.save(); ctx.globalAlpha = encodeReveal;
+  roundRect(centerX - 55, centerY - 13, 110, 27, 13);
+  ctx.fillStyle = "rgba(6,22,27,.86)"; ctx.fill();
+  ctx.strokeStyle = "rgba(50,214,173,.5)"; ctx.stroke();
+  mono("|ψ⟩  →  |ψ⟩ₗ", centerX, centerY + 4, 10, colors.green, "center");
+  ctx.restore();
+
+  const stages = [
+    ["ENCODE", "spread one state", colors.cyan],
+    ["SYNDROME", "locate the error", colors.amber],
+    ["CORRECT", "restore the code", colors.green],
+  ];
+  const stageW = (panelW - 52) / 3;
+  stages.forEach(([name, detail, accent], i) => {
+    const local = i === 0 ? encodeReveal : ease(correction * 1.25 - (i - 1) * 0.15);
+    const x = rightX + 18 + i * (stageW + 8);
+    const y = panelY + panelH - 64;
+    ctx.save(); ctx.globalAlpha = local;
+    roundRect(x, y, stageW, 39, 8);
+    ctx.fillStyle = "rgba(16,35,43,.9)"; ctx.fill();
+    ctx.strokeStyle = `${accent}55`; ctx.stroke();
+    mono(name, x + 8, y + 15, 7, accent);
+    mono(detail, x + 8, y + 29, 5.8, "rgba(150,174,187,.66)");
+    ctx.restore();
+  });
+
+  ctx.save(); ctx.globalAlpha = encodeReveal;
+  const bridgeY = panelY + panelH * 0.22;
+  arrow({ x: leftX + panelW + 7, y: bridgeY }, { x: rightX - 7, y: bridgeY }, colors.green, 0.7, 1.5);
+  mono("ENCODE", leftX + panelW + gap / 2, bridgeY - 10, 6.5, colors.green, "center");
+  ctx.restore();
+}
+
 function scalingPhase(progress: number) {
   if (progress < 0.24) {
     return {
@@ -1352,14 +1571,16 @@ export default function PresentPage() {
   const step = progress * TOTAL_STEPS;
   const phase =
     screen === 0
-      ? scalingPhase(progress)
+      ? logicalQubitPhase(progress)
       : screen === 1
-        ? gateComplexityPhase(progress)
+        ? scalingPhase(progress)
         : screen === 2
-          ? phaseForStep(step)
+          ? gateComplexityPhase(progress)
           : screen === 3
-            ? parkPhase(progress)
-            : parallelPhase(progress);
+            ? phaseForStep(step)
+            : screen === 4
+              ? parkPhase(progress)
+              : parallelPhase(progress);
 
   const setBoundedProgress = useCallback((next: number) => {
     const bounded = clamp(next);
@@ -1387,12 +1608,14 @@ export default function PresentPage() {
       }
       if (canvasRef.current) {
         if (screen === 0) {
-          drawScalingComparison(canvasRef.current, progressRef.current);
+          drawLogicalQubitIntro(canvasRef.current, progressRef.current);
         } else if (screen === 1) {
-          drawGateComplexity(canvasRef.current, progressRef.current);
+          drawScalingComparison(canvasRef.current, progressRef.current);
         } else if (screen === 2) {
-          drawShift(canvasRef.current, progressRef.current * TOTAL_STEPS);
+          drawGateComplexity(canvasRef.current, progressRef.current);
         } else if (screen === 3) {
+          drawShift(canvasRef.current, progressRef.current * TOTAL_STEPS);
+        } else if (screen === 4) {
           drawAodShift(canvasRef.current, progressRef.current);
         } else {
           drawParallelAod(canvasRef.current, progressRef.current);
@@ -1414,7 +1637,7 @@ export default function PresentPage() {
 
   const changeScreen = useCallback(
     (nextScreen: number) => {
-      const bounded = Math.max(0, Math.min(4, nextScreen));
+      const bounded = Math.max(0, Math.min(5, nextScreen));
       if (bounded === screen) return;
       setScreen(bounded);
       setBoundedProgress(0);
@@ -1469,6 +1692,21 @@ export default function PresentPage() {
   const parallelDrops = Math.round(3 * ease((progress * 5 - 3.15) / 1.45));
 
   const titles = [
+    {
+      kicker: "Quantum error correction · the core idea",
+      title: "From a fragile qubit to a logical qubit.",
+      primaryLabel: "Quantum information encoded",
+      primaryValue: "1 → 7",
+      primaryNote: "physical systems in a small color code",
+      costs: [
+        ["Bare physical qubit", "1", "error acts directly"],
+        ["Logical qubit", "1", "distributed state"],
+        ["Correctable local errors", "0 → 1", "distance-3 illustration"],
+        ["Logical state measured", "no", "syndrome only"],
+      ],
+      timeline: ["Physical qubit", "X / Z / Y errors", "Encode", "Detect + correct"],
+      note: "Conceptual 7-qubit color-code illustration · syndromes expose the error, not |ψ⟩",
+    },
     {
       kicker: "Encoding overhead · distance scaling",
       title: "Why qLDPC changes the scaling.",
@@ -1547,9 +1785,9 @@ export default function PresentPage() {
   ] as const;
   const current = titles[screen];
   const legends =
-    screen <= 1
+    screen <= 2
       ? []
-      : screen === 2
+      : screen === 3
       ? [
           ["legend-circle l", "L data"],
           ["legend-circle r", "R data"],
@@ -1563,7 +1801,7 @@ export default function PresentPage() {
           ["legend-circle r", "R atom"],
           ["aod-line", "moving AOD traps"],
           ["slm-box", "SLM lattice"],
-          ["state-dot", screen === 3 ? "captured wrap strip" : "module motion"],
+          ["state-dot", screen === 4 ? "captured wrap strip" : "module motion"],
         ];
 
   return (
@@ -1579,7 +1817,7 @@ export default function PresentPage() {
           </div>
         </div>
         <nav className="deck-tabs" aria-label="Presentation screens">
-          {["Why qLDPC", "Gate tradeoff", "Fixed couplers", "Park ’n Ride", "Parallel column"].map((label, index) => (
+          {["Logical qubits", "Why qLDPC", "Gate tradeoff", "Fixed couplers", "Park ’n Ride", "Parallel column"].map((label, index) => (
             <button
               key={label}
               className={screen === index ? "is-active" : ""}
@@ -1621,14 +1859,16 @@ export default function PresentPage() {
           className="present-canvas"
           aria-label={
             screen === 0
-              ? "Animated comparison of surface, color, and bivariate bicycle code scaling"
+              ? "Animated introduction to physical errors and logical qubit encoding with a color code"
               : screen === 1
-                ? "Animated comparison of transversal CSS gates and BB logical-control complexity"
+                ? "Animated comparison of surface, color, and bivariate bicycle code scaling"
                 : screen === 2
-                  ? "Animated fixed-coupler shift automorphism"
+                  ? "Animated comparison of transversal CSS gates and BB logical-control complexity"
                   : screen === 3
-                    ? "Animated Park-n-Ride AOD shift automorphism"
-                    : "Three Park-n-Ride modules shifting in parallel"
+                    ? "Animated fixed-coupler shift automorphism"
+                    : screen === 4
+                      ? "Animated Park-n-Ride AOD shift automorphism"
+                      : "Three Park-n-Ride modules shifting in parallel"
           }
         />
         {legends.length > 0 && (
@@ -1641,21 +1881,25 @@ export default function PresentPage() {
         <div className="present-shift">
           <span>
             {screen === 0
-              ? "topological patches vs qLDPC block"
+              ? "one quantum state"
               : screen === 1
-                ? "logical entangling gate"
-                : screen === 4
-                  ? "shared physical directions"
-                  : "global permutation"}
+                ? "topological patches vs qLDPC block"
+                : screen === 2
+                  ? "logical entangling gate"
+                  : screen === 5
+                    ? "shared physical directions"
+                    : "global permutation"}
           </span>
           <strong>
             {screen === 0
-              ? "1 logical ↔ 12 logical"
+              ? "|ψ⟩ → |ψ⟩ₗ"
               : screen === 1
-                ? "direct layer ↔ control stack"
-                : screen === 4
-                  ? "+x · +y"
-                  : "+3x · −1y"}
+                ? "1 logical ↔ 12 logical"
+                : screen === 2
+                  ? "direct layer ↔ control stack"
+                  : screen === 5
+                    ? "+x · +y"
+                    : "+3x · −1y"}
           </strong>
         </div>
         <button
@@ -1669,7 +1913,7 @@ export default function PresentPage() {
         <button
           className="deck-edge deck-edge-right"
           onClick={() => changeScreen(screen + 1)}
-          disabled={screen === 4}
+          disabled={screen === 5}
           aria-label="Next presentation screen"
         >
           →
