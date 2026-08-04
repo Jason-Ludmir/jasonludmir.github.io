@@ -29,6 +29,376 @@ const mixPoint = (a: Point, b: Point, t: number): Point => ({
   y: mix(a.y, b.y, t),
 });
 
+function scalingPhase(progress: number) {
+  if (progress < 0.24) {
+    return {
+      number: "01",
+      label: "Start with the small codes",
+      description: "Distance-3 surface and color patches sit above the gross BB code.",
+    };
+  }
+  if (progress < 0.68) {
+    return {
+      number: "02",
+      label: "Increase error distance",
+      description: "Distance-7 patches and the distance-18 two-gross block enter at right.",
+    };
+  }
+  return {
+    number: "03",
+    label: "Compare the overhead",
+    description: "Two-dimensional topological patches grow quadratically with distance.",
+  };
+}
+
+function drawScalingComparison(canvas: HTMLCanvasElement, progress: number) {
+  const rect = canvas.getBoundingClientRect();
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const pixelWidth = Math.max(1, Math.round(rect.width * dpr));
+  const pixelHeight = Math.max(1, Math.round(rect.height * dpr));
+  if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
+    canvas.width = pixelWidth;
+    canvas.height = pixelHeight;
+  }
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const width = rect.width;
+  const height = rect.height;
+  ctx.clearRect(0, 0, width, height);
+
+  const left = clamp(width * 0.135, 108, 194);
+  const right = clamp(width * 0.045, 32, 70);
+  const top = Math.max(12, height * 0.025);
+  const gap = Math.max(5, height * 0.012);
+  const rowHeight = (height - top * 2 - gap * 2) / 3;
+  const contentWidth = width - left - right;
+  const startX = left + contentWidth * 0.17;
+  const targetX = left + contentWidth * 0.52;
+  const formulaX = left + contentWidth * 0.78;
+  const reveal = ease((progress - 0.2) / 0.4);
+  const formulaReveal = ease((progress - 0.62) / 0.27);
+  const slide = (1 - reveal) * Math.min(56, contentWidth * 0.07);
+  const pulse = 0.7 + 0.3 * Math.sin(performance.now() / 260);
+
+  const label = (name: string, detail: string, row: number, accent: string) => {
+    const y = top + row * (rowHeight + gap) + rowHeight / 2;
+    ctx.save();
+    ctx.fillStyle = accent;
+    ctx.font = "600 12px ui-monospace, SFMono-Regular, Menlo, monospace";
+    ctx.fillText(name.toUpperCase(), 28, y - 7);
+    ctx.fillStyle = "rgba(174, 197, 216, .58)";
+    ctx.font = "500 8px ui-monospace, SFMono-Regular, Menlo, monospace";
+    ctx.fillText(detail.toUpperCase(), 28, y + 10);
+    ctx.restore();
+  };
+
+  const separator = (row: number) => {
+    if (row === 0) return;
+    const y = top + row * (rowHeight + gap) - gap / 2;
+    ctx.save();
+    ctx.strokeStyle = "rgba(132, 166, 191, .12)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(22, y);
+    ctx.lineTo(width - 22, y);
+    ctx.stroke();
+    ctx.restore();
+  };
+
+  const transitionArrow = (y: number) => {
+    const x1 = startX + Math.min(72, contentWidth * 0.085);
+    const x2 = targetX - Math.min(78, contentWidth * 0.09);
+    ctx.save();
+    ctx.globalAlpha = reveal;
+    ctx.strokeStyle = `rgba(109, 243, 255, ${0.24 + pulse * 0.18})`;
+    ctx.fillStyle = colors.cyan;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x1, y);
+    ctx.lineTo(x2, y);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x2, y);
+    ctx.lineTo(x2 - 7, y - 4);
+    ctx.lineTo(x2 - 7, y + 4);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  };
+
+  const topologyCaption = (
+    x: number,
+    y: number,
+    title: string,
+    detail: string,
+    alpha = 1,
+  ) => {
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.textAlign = "center";
+    ctx.fillStyle = "rgba(229, 241, 249, .9)";
+    ctx.font = "600 9px ui-monospace, SFMono-Regular, Menlo, monospace";
+    ctx.fillText(title, x, y);
+    ctx.fillStyle = "rgba(137, 161, 181, .7)";
+    ctx.font = "500 7px ui-monospace, SFMono-Regular, Menlo, monospace";
+    ctx.fillText(detail, x, y + 12);
+    ctx.restore();
+  };
+
+  const drawSurfacePatch = (
+    cx: number,
+    cy: number,
+    distance: number,
+    size: number,
+    alpha: number,
+  ) => {
+    const step = size / Math.max(1, distance - 1);
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.translate(cx - size / 2, cy - size / 2);
+    for (let r = 0; r < distance - 1; r++) {
+      for (let c = 0; c < distance - 1; c++) {
+        ctx.fillStyle = (r + c) % 2 === 0
+          ? "rgba(89, 167, 255, .11)"
+          : "rgba(255, 110, 159, .09)";
+        ctx.fillRect(c * step, r * step, step, step);
+      }
+    }
+    ctx.strokeStyle = "rgba(155, 188, 213, .32)";
+    ctx.lineWidth = 0.8;
+    for (let i = 0; i < distance; i++) {
+      const p = i * step;
+      ctx.beginPath();
+      ctx.moveTo(p, 0);
+      ctx.lineTo(p, size);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(0, p);
+      ctx.lineTo(size, p);
+      ctx.stroke();
+    }
+    const logicalIndex = Math.floor(distance / 2) * step;
+    ctx.strokeStyle = colors.cyan;
+    ctx.globalAlpha = alpha * 0.72;
+    ctx.lineWidth = Math.max(1, size / 55);
+    ctx.beginPath();
+    ctx.moveTo(logicalIndex, 0);
+    ctx.lineTo(logicalIndex, size);
+    ctx.stroke();
+    ctx.strokeStyle = colors.pink;
+    ctx.beginPath();
+    ctx.moveTo(0, logicalIndex);
+    ctx.lineTo(size, logicalIndex);
+    ctx.stroke();
+    ctx.globalAlpha = alpha;
+    for (let r = 0; r < distance; r++) {
+      for (let c = 0; c < distance; c++) {
+        ctx.fillStyle = "#dcecf7";
+        ctx.beginPath();
+        ctx.arc(c * step, r * step, clamp(size / distance * 0.14, 1.1, 2.3), 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    ctx.strokeStyle = "rgba(208, 229, 242, .58)";
+    ctx.lineWidth = 1.1;
+    ctx.strokeRect(0, 0, size, size);
+    ctx.restore();
+  };
+
+  const drawColorPatch = (
+    cx: number,
+    cy: number,
+    distance: number,
+    size: number,
+    alpha: number,
+  ) => {
+    const h = size * 0.86;
+    const topPoint = { x: cx, y: cy - h / 2 };
+    const leftPoint = { x: cx - size / 2, y: cy + h / 2 };
+    const rightPoint = { x: cx + size / 2, y: cy + h / 2 };
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.lineWidth = Math.max(1.2, size / 58);
+    [[topPoint, leftPoint, colors.pink], [leftPoint, rightPoint, colors.green], [rightPoint, topPoint, colors.blue]].forEach(
+      ([a, b, color]) => {
+        const start = a as Point;
+        const end = b as Point;
+        ctx.strokeStyle = color as string;
+        ctx.beginPath();
+        ctx.moveTo(start.x, start.y);
+        ctx.lineTo(end.x, end.y);
+        ctx.stroke();
+      },
+    );
+    for (let r = 0; r < distance; r++) {
+      const t = distance === 1 ? 0 : r / (distance - 1);
+      const y = mix(topPoint.y, leftPoint.y, t);
+      const rowLeft = mix(topPoint.x, leftPoint.x, t);
+      const rowRight = mix(topPoint.x, rightPoint.x, t);
+      for (let c = 0; c <= r; c++) {
+        const u = r === 0 ? 0.5 : c / r;
+        const x = mix(rowLeft, rowRight, u);
+        ctx.fillStyle = c % 3 === 0 ? colors.pink : c % 3 === 1 ? colors.green : colors.blue;
+        ctx.globalAlpha = alpha * 0.84;
+        ctx.beginPath();
+        ctx.arc(x, y, clamp(size / distance * 0.13, 1.15, 2.5), 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    ctx.globalAlpha = alpha * 0.78;
+    ctx.strokeStyle = colors.amber;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(topPoint.x, topPoint.y);
+    ctx.lineTo(cx, cy + h / 2);
+    ctx.stroke();
+    ctx.restore();
+  };
+
+  const drawBicyclePatch = (
+    cx: number,
+    cy: number,
+    rows: number,
+    patchWidth: number,
+    patchHeight: number,
+    alpha: number,
+  ) => {
+    const cols = 12;
+    const cellW = patchWidth / cols;
+    const cellH = patchHeight / rows;
+    const x0 = cx - patchWidth / 2;
+    const y0 = cy - patchHeight / 2;
+    const radius = clamp(Math.min(cellW, cellH) * 0.17, 0.75, 2.1);
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = "rgba(153, 185, 208, .18)";
+    ctx.lineWidth = 0.55;
+    for (let c = 0; c <= cols; c++) {
+      ctx.beginPath();
+      ctx.moveTo(x0 + c * cellW, y0);
+      ctx.lineTo(x0 + c * cellW, y0 + patchHeight);
+      ctx.stroke();
+    }
+    for (let r = 0; r <= rows; r++) {
+      ctx.beginPath();
+      ctx.moveTo(x0, y0 + r * cellH);
+      ctx.lineTo(x0 + patchWidth, y0 + r * cellH);
+      ctx.stroke();
+    }
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const x = x0 + c * cellW;
+        const y = y0 + r * cellH;
+        ctx.fillStyle = colors.blue;
+        ctx.beginPath();
+        ctx.arc(x + cellW * 0.28, y + cellH * 0.68, radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = colors.amber;
+        ctx.beginPath();
+        ctx.arc(x + cellW * 0.72, y + cellH * 0.32, radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = colors.green;
+        ctx.fillRect(x + cellW * 0.2 - radius, y + cellH * 0.24 - radius, radius * 1.65, radius * 1.65);
+        ctx.fillStyle = colors.pink;
+        ctx.fillRect(x + cellW * 0.68 - radius, y + cellH * 0.7 - radius, radius * 1.65, radius * 1.65);
+      }
+    }
+    ctx.strokeStyle = colors.cyan;
+    ctx.globalAlpha = alpha * 0.58;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x0 + patchWidth * 0.35, y0 + patchHeight * 0.76);
+    ctx.lineTo(x0 + patchWidth * 0.53, y0 + patchHeight * 0.22);
+    ctx.lineTo(x0 + patchWidth * 0.73, y0 + patchHeight * 0.6);
+    ctx.stroke();
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = "rgba(215, 233, 244, .58)";
+    ctx.lineWidth = 1.1;
+    ctx.strokeRect(x0, y0, patchWidth, patchHeight);
+    ctx.fillStyle = "rgba(109, 243, 255, .82)";
+    ctx.font = "600 9px ui-monospace, SFMono-Regular, Menlo, monospace";
+    ctx.textAlign = "center";
+    ctx.fillText("↔", cx, y0 - 3);
+    ctx.fillText("↕", x0 - 6, cy + 3);
+    ctx.restore();
+  };
+
+  const scalingFormula = (
+    row: number,
+    formula: string,
+    detail: string,
+    accent: string,
+  ) => {
+    const y = top + row * (rowHeight + gap) + rowHeight / 2;
+    ctx.save();
+    ctx.globalAlpha = formulaReveal;
+    ctx.fillStyle = "rgba(130, 153, 173, .66)";
+    ctx.font = "500 7px ui-monospace, SFMono-Regular, Menlo, monospace";
+    ctx.fillText("PHYSICAL-QUBIT SCALING", formulaX, y - 18);
+    ctx.fillStyle = accent;
+    ctx.shadowColor = accent;
+    ctx.shadowBlur = 12 * formulaReveal;
+    ctx.font = `500 ${clamp(width * 0.018, 18, 30)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+    ctx.fillText(formula, formulaX, y + 7);
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = "rgba(154, 177, 196, .68)";
+    ctx.font = "500 8px ui-monospace, SFMono-Regular, Menlo, monospace";
+    ctx.fillText(detail, formulaX, y + 24);
+    ctx.restore();
+  };
+
+  for (let row = 0; row < 3; row++) separator(row);
+
+  const surfaceY = top + rowHeight / 2 - 3;
+  label("Surface code", "one logical qubit per patch", 0, colors.blue);
+  drawSurfacePatch(startX, surfaceY, 3, clamp(rowHeight * 0.36, 42, 58), 1);
+  topologyCaption(startX, surfaceY + rowHeight * 0.34, "d = 3", "n = 9 data qubits");
+  transitionArrow(surfaceY);
+  drawSurfacePatch(targetX + slide, surfaceY, 7, clamp(rowHeight * 0.62, 70, 102), reveal);
+  topologyCaption(targetX + slide, surfaceY + rowHeight * 0.38, "d = 7", "n = 49 data qubits", reveal);
+  scalingFormula(0, "n = Θ(d²)", "per encoded logical qubit", colors.blue);
+
+  const colorY = top + (rowHeight + gap) + rowHeight / 2 - 2;
+  label("Color code", "one logical qubit per patch", 1, colors.pink);
+  drawColorPatch(startX, colorY, 3, clamp(rowHeight * 0.39, 46, 64), 1);
+  topologyCaption(startX, colorY + rowHeight * 0.34, "d = 3", "n = 7 data qubits");
+  transitionArrow(colorY);
+  drawColorPatch(targetX + slide, colorY, 7, clamp(rowHeight * 0.66, 74, 108), reveal);
+  topologyCaption(targetX + slide, colorY + rowHeight * 0.39, "d = 7", "n = 37 data qubits", reveal);
+  scalingFormula(1, "n = Θ(d²)", "per encoded logical qubit", colors.pink);
+
+  const bbY = top + 2 * (rowHeight + gap) + rowHeight / 2 - 2;
+  label("Bivariate bicycle", "twelve logical qubits per block", 2, colors.green);
+  drawBicyclePatch(
+    startX,
+    bbY,
+    6,
+    clamp(rowHeight * 0.8, 88, 126),
+    clamp(rowHeight * 0.38, 42, 58),
+    1,
+  );
+  topologyCaption(startX, bbY + rowHeight * 0.35, "gross · [[144,12,12]]", "12 physical qubits / logical");
+  transitionArrow(bbY);
+  drawBicyclePatch(
+    targetX + slide,
+    bbY,
+    12,
+    clamp(rowHeight * 0.73, 82, 118),
+    clamp(rowHeight * 0.66, 74, 102),
+    reveal,
+  );
+  topologyCaption(
+    targetX + slide,
+    bbY + rowHeight * 0.4,
+    "two-gross · [[288,12,18]]",
+    "24 physical qubits / logical",
+    reveal,
+  );
+  scalingFormula(2, "k,d = Θ(n)", "asymptotically good qLDPC target", colors.green);
+}
+
 function phaseForStep(step: number) {
   if (step < 2) {
     return {
@@ -755,10 +1125,12 @@ export default function PresentPage() {
   const step = progress * TOTAL_STEPS;
   const phase =
     screen === 0
-      ? phaseForStep(step)
+      ? scalingPhase(progress)
       : screen === 1
-        ? parkPhase(progress)
-        : parallelPhase(progress);
+        ? phaseForStep(step)
+        : screen === 2
+          ? parkPhase(progress)
+          : parallelPhase(progress);
 
   const setBoundedProgress = useCallback((next: number) => {
     const bounded = clamp(next);
@@ -786,8 +1158,10 @@ export default function PresentPage() {
       }
       if (canvasRef.current) {
         if (screen === 0) {
-          drawShift(canvasRef.current, progressRef.current * TOTAL_STEPS);
+          drawScalingComparison(canvasRef.current, progressRef.current);
         } else if (screen === 1) {
+          drawShift(canvasRef.current, progressRef.current * TOTAL_STEPS);
+        } else if (screen === 2) {
           drawAodShift(canvasRef.current, progressRef.current);
         } else {
           drawParallelAod(canvasRef.current, progressRef.current);
@@ -809,7 +1183,7 @@ export default function PresentPage() {
 
   const changeScreen = useCallback(
     (nextScreen: number) => {
-      const bounded = Math.max(0, Math.min(2, nextScreen));
+      const bounded = Math.max(0, Math.min(3, nextScreen));
       if (bounded === screen) return;
       setScreen(bounded);
       setBoundedProgress(0);
@@ -865,6 +1239,21 @@ export default function PresentPage() {
 
   const titles = [
     {
+      kicker: "Encoding overhead · distance scaling",
+      title: "Why qLDPC changes the scaling.",
+      primaryLabel: "Logical qubits per BB block",
+      primaryValue: "12",
+      primaryNote: "gross and two-gross",
+      costs: [
+        ["Surface patch", "Θ(d²)", "per logical qubit"],
+        ["Color patch", "Θ(d²)", "per logical qubit"],
+        ["Gross → two-gross", progress < 0.24 ? "144" : "144→288", "code qubits"],
+        ["Good qLDPC target", "k,d∝n", "constant rate + linear distance"],
+      ],
+      timeline: ["Small codes", "Increase distance", "Reveal scaling", "Compare overhead"],
+      note: "Gross examples are finite BB codes · asymptotic statement applies to good qLDPC families",
+    },
+    {
       kicker: "Fixed-coupler shift · δ = x³y⁻¹",
       title: "One global shift, in physical gates.",
       primaryLabel: "Two-qubit gates executed",
@@ -913,6 +1302,8 @@ export default function PresentPage() {
   const current = titles[screen];
   const legends =
     screen === 0
+      ? []
+      : screen === 1
       ? [
           ["legend-circle l", "L data"],
           ["legend-circle r", "R data"],
@@ -926,7 +1317,7 @@ export default function PresentPage() {
           ["legend-circle r", "R atom"],
           ["aod-line", "moving AOD traps"],
           ["slm-box", "SLM lattice"],
-          ["state-dot", screen === 1 ? "captured wrap strip" : "module motion"],
+          ["state-dot", screen === 2 ? "captured wrap strip" : "module motion"],
         ];
 
   return (
@@ -942,7 +1333,7 @@ export default function PresentPage() {
           </div>
         </div>
         <nav className="deck-tabs" aria-label="Presentation screens">
-          {["Fixed couplers", "Park ’n Ride", "Parallel column"].map((label, index) => (
+          {["Why qLDPC", "Fixed couplers", "Park ’n Ride", "Parallel column"].map((label, index) => (
             <button
               key={label}
               className={screen === index ? "is-active" : ""}
@@ -984,20 +1375,36 @@ export default function PresentPage() {
           className="present-canvas"
           aria-label={
             screen === 0
-              ? "Animated fixed-coupler shift automorphism"
+              ? "Animated comparison of surface, color, and bivariate bicycle code scaling"
               : screen === 1
-                ? "Animated Park-n-Ride AOD shift automorphism"
-                : "Three Park-n-Ride modules shifting in parallel"
+                ? "Animated fixed-coupler shift automorphism"
+                : screen === 2
+                  ? "Animated Park-n-Ride AOD shift automorphism"
+                  : "Three Park-n-Ride modules shifting in parallel"
           }
         />
-        <div className="present-legend" aria-hidden="true">
-          {legends.map(([className, label]) => (
-            <span key={label}><i className={className} />{label}</span>
-          ))}
-        </div>
+        {legends.length > 0 && (
+          <div className="present-legend" aria-hidden="true">
+            {legends.map(([className, label]) => (
+              <span key={label}><i className={className} />{label}</span>
+            ))}
+          </div>
+        )}
         <div className="present-shift">
-          <span>{screen === 2 ? "shared physical directions" : "global permutation"}</span>
-          <strong>{screen === 2 ? "+x · +y" : "+3x · −1y"}</strong>
+          <span>
+            {screen === 0
+              ? "topological patches vs qLDPC block"
+              : screen === 3
+                ? "shared physical directions"
+                : "global permutation"}
+          </span>
+          <strong>
+            {screen === 0
+              ? "1 logical ↔ 12 logical"
+              : screen === 3
+                ? "+x · +y"
+                : "+3x · −1y"}
+          </strong>
         </div>
         <button
           className="deck-edge deck-edge-left"
@@ -1010,7 +1417,7 @@ export default function PresentPage() {
         <button
           className="deck-edge deck-edge-right"
           onClick={() => changeScreen(screen + 1)}
-          disabled={screen === 2}
+          disabled={screen === 3}
           aria-label="Next presentation screen"
         >
           →
