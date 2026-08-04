@@ -8,7 +8,7 @@ const COLS = 12;
 const ROWS = 6;
 const STOPS = [0, 2, 3, 5, 6];
 const SLIDE_STOPS = [
-  [0, 0.28, 0.55, 1],
+  [0, 0.28, 1],
   [0, 0.42, 0.68, 1],
   [0, 0.46, 0.7, 1],
   [0, 0.6, 0.72, 0.82, 0.92],
@@ -55,16 +55,9 @@ function connectivityPhase(progress: number) {
       description: "Three transported atoms enter Rydberg range of three atoms in the stationary middle column.",
     };
   }
-  if (progress <= 0.551) {
-    return {
-      number: "03",
-      label: "Separate the columns",
-      description: "Moving the atoms away removes those interaction edges from the connectivity graph.",
-    };
-  }
   return {
-    number: "04",
-    label: "Reconnect to the right column",
+    number: "03",
+    label: "Move directly to the right column",
     description: "The same transported qubits form a different set of interactions without fixed couplers.",
   };
 }
@@ -92,9 +85,8 @@ function drawConnectivityIntro(canvas: HTMLCanvasElement, progress: number) {
   const panelW = (width - inset * 2 - gap) / 2;
   const pulse = 0.65 + 0.35 * Math.sin(performance.now() / 220);
   const middleT = ease(progress / 0.28);
-  const separateT = ease((progress - 0.28) / 0.27);
-  const rightT = ease((progress - 0.55) / 0.45);
-  const middleStrength = progress <= 0.28 ? middleT : 1 - separateT;
+  const rightT = ease((progress - 0.28) / 0.72);
+  const middleStrength = progress <= 0.28 ? middleT : 1 - rightT;
   const rightStrength = rightT;
 
   const roundRect = (x: number, y: number, w: number, h: number, r = 14) => {
@@ -107,7 +99,7 @@ function drawConnectivityIntro(canvas: HTMLCanvasElement, progress: number) {
   };
   const mono = (text: string, x: number, y: number, size = 9, color = "rgba(190,211,225,.72)", align: CanvasTextAlign = "left") => {
     ctx.save(); ctx.textAlign = align; ctx.fillStyle = color;
-    ctx.font = `600 ${size}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+    ctx.font = `600 ${size * 1.08}px ui-monospace, SFMono-Regular, Menlo, monospace`;
     ctx.fillText(text, x, y); ctx.restore();
   };
   const node = (x: number, y: number, color: string, radius = 6, alpha = 1) => {
@@ -131,7 +123,7 @@ function drawConnectivityIntro(canvas: HTMLCanvasElement, progress: number) {
   const sectionH = (panelH - 71 - sectionGap) / 2;
 
   const drawFixedGrid = (boxX: number, boxY: number, boxW: number, boxH: number, physical: boolean) => {
-    const spacing = clamp(Math.min(boxW, boxH) * 0.23, 34, 54);
+    const spacing = clamp(Math.min(boxW, boxH) * 0.23, 38, 64);
     const cx = boxX + boxW / 2;
     const cy = boxY + boxH / 2 + 6;
     const points: Point[][] = [];
@@ -177,12 +169,9 @@ function drawConnectivityIntro(canvas: HTMLCanvasElement, progress: number) {
     const rightColumnX = boxX + boxW * 0.8;
     const middleMeetX = middleX - clamp(boxW * 0.1, 38, 52);
     const rightMeetX = rightColumnX - clamp(boxW * 0.1, 38, 52);
-    const returnedX = mix(middleMeetX, baseX, separateT);
     const movingX = progress <= 0.28
       ? mix(baseX, middleMeetX, middleT)
-      : progress <= 0.55
-        ? returnedX
-        : mix(baseX, rightMeetX, rightT);
+      : mix(middleMeetX, rightMeetX, rightT);
     const moving: Point[] = [];
     const middle: Point[] = [];
     const right: Point[] = [];
@@ -312,7 +301,7 @@ function drawClassicalBitIntro(canvas: HTMLCanvasElement, progress: number) {
     ctx.save();
     ctx.textAlign = align;
     ctx.fillStyle = color;
-    ctx.font = `600 ${size}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+    ctx.font = `600 ${size * 1.08}px ui-monospace, SFMono-Regular, Menlo, monospace`;
     ctx.fillText(text, x, y);
     ctx.restore();
   };
@@ -324,7 +313,7 @@ function drawClassicalBitIntro(canvas: HTMLCanvasElement, progress: number) {
     ctx.restore();
   };
   const bitCell = (cx: number, cy: number, value: string, accent: string, alpha = 1, error = false, size = 64) => {
-    ctx.save(); ctx.globalAlpha = alpha;
+    ctx.save(); ctx.globalAlpha *= alpha;
     roundRect(cx - size / 2, cy - size / 2, size, size, 12);
     ctx.fillStyle = error ? "rgba(91,39,32,.9)" : "rgba(15,38,51,.92)"; ctx.fill();
     ctx.strokeStyle = accent; ctx.lineWidth = error ? 2.2 : 1.2; ctx.stroke();
@@ -344,7 +333,7 @@ function drawClassicalBitIntro(canvas: HTMLCanvasElement, progress: number) {
   const leftY = panelY + panelH * 0.48;
   const sourceX = leftX + panelW * 0.25;
   const targetX = leftX + panelW * 0.75;
-  bitCell(sourceX, leftY, "1", colors.cyan, 1, false, clamp(panelH * 0.25, 76, 118));
+  bitCell(sourceX, leftY, "1", colors.cyan, 1, false, clamp(panelH * 0.25, 82, 140));
   mono("INTENDED", sourceX, leftY - clamp(panelH * 0.16, 54, 78), 7, colors.cyan, "center");
   drawArrow(sourceX + 64, leftY, targetX - 64, leftY, flip > 0.05 ? colors.amber : "rgba(109,243,255,.48)");
 
@@ -358,16 +347,18 @@ function drawClassicalBitIntro(canvas: HTMLCanvasElement, progress: number) {
   mono("NOISE", boltX, leftY - 42, 7, colors.amber, "center");
   ctx.restore();
 
-  bitCell(targetX, leftY, flip > 0.5 ? "0" : "1", flip > 0.5 ? colors.amber : colors.cyan, 1, flip > 0.5, clamp(panelH * 0.25, 76, 118));
+  bitCell(targetX, leftY, flip > 0.5 ? "0" : "1", flip > 0.5 ? colors.amber : colors.cyan, 1, flip > 0.5, clamp(panelH * 0.25, 82, 140));
   mono(flip > 0.5 ? "WRONG" : "READ", targetX, leftY - clamp(panelH * 0.16, 54, 78), 7, flip > 0.5 ? colors.amber : colors.cyan, "center");
   mono("ONE FLIP → THE STORED ANSWER IS LOST", leftX + panelW / 2, panelY + panelH - 26, 8, colors.amber, "center");
 
   const rightX = inset + panelW + gap;
+  ctx.save();
+  ctx.globalAlpha = repeat;
   mono("7-BIT REPETITION CODE", rightX + 18, panelY + 24, 10, colors.green);
   mono("CLASSICAL REDUNDANCY + MAJORITY VOTE", rightX + 18, panelY + 39, 7, "rgba(137,161,181,.58)");
 
   const cellsY = panelY + panelH * 0.38;
-  const cellSize = clamp(panelW * 0.083, 35, 52);
+  const cellSize = clamp(panelW * 0.09, 38, 60);
   const cellGap = clamp(panelW * 0.025, 9, 16);
   const totalW = cellSize * 7 + cellGap * 6;
   const cellsX = rightX + (panelW - totalW) / 2 + cellSize / 2;
@@ -404,6 +395,7 @@ function drawClassicalBitIntro(canvas: HTMLCanvasElement, progress: number) {
   ctx.fillStyle = `rgba(50,214,173,${0.08 + pulse * 0.08})`; ctx.fill();
   ctx.strokeStyle = "rgba(50,214,173,.42)"; ctx.stroke();
   mono("6 > 1", rightX + panelW * 0.87, marginY + 3, 8, colors.green, "center");
+  ctx.restore();
   ctx.restore();
 }
 
@@ -480,7 +472,7 @@ function drawLogicalQubitIntro(canvas: HTMLCanvasElement, progress: number) {
     ctx.save();
     ctx.textAlign = align;
     ctx.fillStyle = color;
-    ctx.font = `600 ${size}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+    ctx.font = `600 ${size * 1.08}px ui-monospace, SFMono-Regular, Menlo, monospace`;
     ctx.fillText(text, x, y);
     ctx.restore();
   };
@@ -508,7 +500,7 @@ function drawLogicalQubitIntro(canvas: HTMLCanvasElement, progress: number) {
   mono("THE STATE LIVES IN ONE PLACE", leftX + 18, panelY + 39, 7, "rgba(137,161,181,.58)");
   const sphereX = leftX + panelW * 0.34;
   const sphereY = panelY + panelH * 0.45;
-  const radius = clamp(panelH * 0.23, 68, 112);
+  const radius = clamp(panelH * 0.23, 74, 135);
   ctx.save();
   ctx.strokeStyle = "rgba(165,194,214,.28)";
   ctx.lineWidth = 1;
@@ -559,7 +551,7 @@ function drawLogicalQubitIntro(canvas: HTMLCanvasElement, progress: number) {
   mono("7-QUBIT COLOR CODE · CONCEPTUAL VIEW", rightX + 18, panelY + 39, 7, "rgba(137,161,181,.58)");
   const centerX = rightX + panelW * 0.51;
   const centerY = panelY + panelH * 0.49;
-  const scale = clamp(panelH * 0.19, 62, 96);
+  const scale = clamp(panelH * 0.19, 68, 116);
   const codePoints = [
     { x: centerX, y: centerY - scale },
     { x: centerX - scale * 0.5, y: centerY - scale * 0.14 },
@@ -594,10 +586,11 @@ function drawLogicalQubitIntro(canvas: HTMLCanvasElement, progress: number) {
   ctx.restore();
 
   ctx.save(); ctx.globalAlpha = encodeReveal;
-  roundRect(centerX - 55, centerY - 13, 110, 27, 13);
+  const logicalStateY = centerY - scale - 30;
+  roundRect(centerX - 62, logicalStateY - 14, 124, 28, 14);
   ctx.fillStyle = "rgba(6,22,27,.86)"; ctx.fill();
   ctx.strokeStyle = "rgba(50,214,173,.5)"; ctx.stroke();
-  mono("|ψ⟩  →  |ψ⟩ₗ", centerX, centerY + 4, 10, colors.green, "center");
+  mono("|ψ⟩  →  |ψ⟩ₗ", centerX, logicalStateY + 4, 11, colors.green, "center");
   ctx.restore();
 
   const stages = [
@@ -1073,7 +1066,7 @@ function drawGateComplexity(canvas: HTMLCanvasElement, progress: number) {
     ctx.save();
     ctx.textAlign = align;
     ctx.fillStyle = color;
-    ctx.font = `600 ${size}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+    ctx.font = `600 ${size * 1.08}px ui-monospace, SFMono-Regular, Menlo, monospace`;
     ctx.fillText(text, x, y);
     ctx.restore();
   };
@@ -2129,15 +2122,11 @@ export default function PresentPage() {
       ? "fixed ↔ mobile"
       : progress <= 0.281
         ? "middle"
-        : progress <= 0.551
-          ? "separated"
-          : "right";
+        : "right";
   const adaptiveLinks =
     progress <= 0.28
       ? Math.round(3 * ease(progress / 0.28))
-      : progress <= 0.55
-        ? Math.round(3 * (1 - ease((progress - 0.28) / 0.27)))
-        : Math.round(3 * ease((progress - 0.55) / 0.45));
+      : 3;
 
   const titles = [
     {
@@ -2152,7 +2141,7 @@ export default function PresentPage() {
         ["Active Rydberg links", adaptiveLinks.toString(), "change with position"],
         ["Hardware rewiring", "0", "motion changes the graph"],
       ],
-      timeline: ["Fixed grid", "Meet middle", "Separate", "Meet right"],
+      timeline: ["Fixed grid", "Meet middle", "Meet right"],
       note: "Conceptual connectivity comparison · Rydberg interactions appear when transported atoms enter the interaction radius",
     },
     {
@@ -2316,21 +2305,6 @@ export default function PresentPage() {
         </div>
       </header>
 
-      <section className="present-costs" aria-label="Live operation costs">
-        <article className="primary-cost">
-          <span>{current.primaryLabel}</span>
-          <strong>{current.primaryValue}</strong>
-          <small>{current.primaryNote}</small>
-        </article>
-        {current.costs.map(([label, value, note]) => (
-          <article key={label}>
-            <span>{label}</span>
-            <strong>{value}</strong>
-            <small>{note}</small>
-          </article>
-        ))}
-      </section>
-
       <section className="present-stage">
         <canvas
           ref={canvasRef}
@@ -2360,7 +2334,7 @@ export default function PresentPage() {
             ))}
           </div>
         )}
-        <div className="present-shift">
+        {!(screen === 1 && progress < 0.43) && <div className="present-shift">
           <span>
             {screen === 0
               ? "physical layout ↔ connectivity graph"
@@ -2391,7 +2365,7 @@ export default function PresentPage() {
                         ? "+x · +y"
                         : "+3x · −1y"}
           </strong>
-        </div>
+        </div>}
         <button
           className="deck-edge deck-edge-left"
           onClick={retreat}
@@ -2455,9 +2429,6 @@ export default function PresentPage() {
         >
           Fullscreen <kbd>F</kbd>
         </button>
-        <p className="present-note">
-          {current.note}
-        </p>
       </footer>
     </main>
   );
