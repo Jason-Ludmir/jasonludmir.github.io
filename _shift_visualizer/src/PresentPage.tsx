@@ -399,6 +399,233 @@ function drawScalingComparison(canvas: HTMLCanvasElement, progress: number) {
   scalingFormula(2, "k,d = Θ(n)", "asymptotically good qLDPC target", colors.green);
 }
 
+function gateComplexityPhase(progress: number) {
+  if (progress < 0.22) {
+    return {
+      number: "01",
+      label: "Align identical code blocks",
+      description: "Matching physical qubits in two CSS blocks are paired for a logical CNOT.",
+    };
+  }
+  if (progress < 0.48) {
+    return {
+      number: "02",
+      label: "Fire one bitwise layer",
+      description: "Every physical CNOT executes in parallel when pairwise connectivity exists.",
+    };
+  }
+  if (progress < 0.7) {
+    return {
+      number: "03",
+      label: "Select two BB logical qubits",
+      description: "The target states are embedded among twelve logical qubits in each BB block.",
+    };
+  }
+  return {
+    number: "04",
+    label: "Compile into bicycle instructions",
+    description: "Shifts, LPU surgery, repeated checks, and feed-forward replace a direct gate.",
+  };
+}
+
+function drawGateComplexity(canvas: HTMLCanvasElement, progress: number) {
+  const rect = canvas.getBoundingClientRect();
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const pixelWidth = Math.max(1, Math.round(rect.width * dpr));
+  const pixelHeight = Math.max(1, Math.round(rect.height * dpr));
+  if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
+    canvas.width = pixelWidth;
+    canvas.height = pixelHeight;
+  }
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const width = rect.width;
+  const height = rect.height;
+  ctx.clearRect(0, 0, width, height);
+
+  const inset = clamp(width * 0.055, 52, 86);
+  const gap = clamp(width * 0.018, 14, 28);
+  const topY = 12;
+  const topH = height * 0.38;
+  const bottomY = topY + topH + 12;
+  const bottomH = height - bottomY - 12;
+  const pairReveal = ease((progress - 0.04) / 0.2);
+  const fire = ease((progress - 0.22) / 0.2);
+  const bbReveal = ease((progress - 0.44) / 0.18);
+  const compile = ease((progress - 0.66) / 0.28);
+  const pulse = 0.65 + 0.35 * Math.sin(performance.now() / 220);
+
+  const roundRect = (x: number, y: number, w: number, h: number, r = 12) => {
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h, r);
+  };
+  const panel = (x: number, y: number, w: number, h: number, accent: string) => {
+    ctx.save();
+    roundRect(x, y, w, h, 13);
+    ctx.fillStyle = "rgba(8, 22, 32, .7)";
+    ctx.fill();
+    ctx.strokeStyle = accent;
+    ctx.globalAlpha = 0.2;
+    ctx.stroke();
+    ctx.restore();
+  };
+  const mono = (text: string, x: number, y: number, size = 9, color = "rgba(190,211,225,.72)", align: CanvasTextAlign = "left") => {
+    ctx.save();
+    ctx.textAlign = align;
+    ctx.fillStyle = color;
+    ctx.font = `600 ${size}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+    ctx.fillText(text, x, y);
+    ctx.restore();
+  };
+  const badge = (text: string, x: number, y: number, accent: string, alpha = 1) => {
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.font = "600 8px ui-monospace, SFMono-Regular, Menlo, monospace";
+    const w = ctx.measureText(text).width + 18;
+    roundRect(x - w / 2, y - 10, w, 20, 10);
+    ctx.fillStyle = `${accent}18`;
+    ctx.fill();
+    ctx.strokeStyle = `${accent}66`;
+    ctx.stroke();
+    ctx.fillStyle = accent;
+    ctx.textAlign = "center";
+    ctx.fillText(text, x, y + 3);
+    ctx.restore();
+  };
+
+  const halfW = (width - inset * 2 - gap) / 2;
+  const drawGridBlock = (cx: number, cy: number, triangular: boolean, accent: string, alpha: number) => {
+    const points: Point[] = [];
+    const span = clamp(topH * 0.42, 54, 84);
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    if (triangular) {
+      const rows = 5;
+      for (let r = 0; r < rows; r++) {
+        const count = r + 1;
+        for (let c = 0; c < count; c++) {
+          points.push({
+            x: cx + (c - (count - 1) / 2) * span / 4,
+            y: cy - span * 0.42 + r * span / 4,
+          });
+        }
+      }
+    } else {
+      for (let r = 0; r < 5; r++) {
+        for (let c = 0; c < 5; c++) {
+          points.push({ x: cx + (c - 2) * span / 4, y: cy + (r - 2) * span / 4 });
+        }
+      }
+    }
+    ctx.strokeStyle = "rgba(137,169,190,.18)";
+    ctx.lineWidth = 0.8;
+    for (let i = 0; i < points.length; i++) {
+      for (let j = i + 1; j < points.length; j++) {
+        const d = Math.hypot(points[i].x - points[j].x, points[i].y - points[j].y);
+        if (d < span / 3) {
+          ctx.beginPath(); ctx.moveTo(points[i].x, points[i].y); ctx.lineTo(points[j].x, points[j].y); ctx.stroke();
+        }
+      }
+    }
+    for (const p of points) {
+      ctx.fillStyle = accent;
+      ctx.beginPath(); ctx.arc(p.x, p.y, 2.2, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+    return points;
+  };
+
+  const drawCssPair = (x: number, name: string, triangular: boolean, accent: string) => {
+    panel(x, topY, halfW, topH, accent);
+    mono(name.toUpperCase(), x + 16, topY + 20, 9, accent);
+    mono("TWO IDENTICAL CSS BLOCKS", x + 16, topY + 34, 7, "rgba(137,161,181,.58)");
+    const cy = topY + topH * 0.57;
+    const leftCx = x + halfW * 0.31;
+    const rightCx = x + halfW * 0.69;
+    const a = drawGridBlock(leftCx, cy, triangular, accent, 1);
+    const b = drawGridBlock(rightCx, cy, triangular, accent, pairReveal);
+    const count = Math.min(a.length, b.length);
+    ctx.save();
+    ctx.globalAlpha = fire;
+    for (let i = 0; i < count; i++) {
+      ctx.strokeStyle = `${accent}${Math.round((0.25 + pulse * 0.45) * 255).toString(16).padStart(2,"0")}`;
+      ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.moveTo(a[i].x, a[i].y); ctx.lineTo(b[i].x, b[i].y); ctx.stroke();
+      ctx.fillStyle = "#07131d";
+      ctx.strokeStyle = accent;
+      ctx.beginPath(); ctx.arc(b[i].x, b[i].y, 3.4, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    }
+    ctx.restore();
+    mono("CONTROL", leftCx, topY + topH - 14, 7, "rgba(160,181,197,.58)", "center");
+    mono("TARGET", rightCx, topY + topH - 14, 7, "rgba(160,181,197,.58)", "center");
+    badge("BITWISE CNOT · DEPTH 1*", x + halfW / 2, topY + 20, accent, fire);
+  };
+
+  drawCssPair(inset, "Surface code", false, colors.blue);
+  drawCssPair(inset + halfW + gap, "Color code", true, colors.pink);
+
+  panel(inset, bottomY, width - inset * 2, bottomH, colors.green);
+  ctx.save(); ctx.globalAlpha = bbReveal;
+  mono("BIVARIATE BICYCLE · SELECTED LOGICAL CNOT", inset + 16, bottomY + 21, 9, colors.green);
+  mono("12 LOGICAL QUBITS SHARE EACH DENSE CODE BLOCK", inset + 16, bottomY + 35, 7, "rgba(137,161,181,.58)");
+
+  const moduleW = clamp(width * 0.115, 116, 166);
+  const moduleH = clamp(bottomH * 0.58, 86, 126);
+  const moduleY = bottomY + bottomH * 0.58;
+  const drawBbModule = (cx: number, target: number, label: string) => {
+    const x = cx - moduleW / 2;
+    const y = moduleY - moduleH / 2;
+    roundRect(x, y, moduleW, moduleH, 12);
+    ctx.fillStyle = "rgba(14,43,42,.72)"; ctx.fill();
+    ctx.strokeStyle = "rgba(50,214,173,.32)"; ctx.stroke();
+    mono(label, cx, y - 8, 7, "rgba(146,180,178,.7)", "center");
+    for (let i = 0; i < 12; i++) {
+      const col = i % 6, row = Math.floor(i / 6);
+      const px = x + 15 + col * (moduleW - 30) / 5;
+      const py = y + moduleH * (row ? 0.67 : 0.33);
+      ctx.strokeStyle = i + 1 === target ? colors.amber : "rgba(108,176,164,.28)";
+      ctx.fillStyle = i + 1 === target ? `rgba(255,189,102,${0.4 + pulse * 0.25})` : "rgba(24,72,67,.72)";
+      ctx.beginPath(); ctx.arc(px, py, i + 1 === target ? 7 : 5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      mono(String(i + 1), px, py + 2.3, 5.5, i + 1 === target ? "#fff1d4" : "rgba(189,220,213,.72)", "center");
+    }
+    return { x, y, cx };
+  };
+  const leftModule = drawBbModule(inset + moduleW * 0.65, 4, "BB MODULE A");
+  const rightModule = drawBbModule(width - inset - moduleW * 0.65, 10, "BB MODULE B");
+  ctx.restore();
+
+  const flowX1 = leftModule.x + moduleW + 22;
+  const flowX2 = rightModule.x - 22;
+  const flowW = flowX2 - flowX1;
+  const cards = [
+    ["01", "REWRITE", "CNOT → Pauli pattern"],
+    ["02", "ADDRESS", "shift to native support"],
+    ["03", "SURGERY", "LPU + adapter checks"],
+    ["04", "CORRECT", "decode + feed-forward"],
+  ];
+  const cardGap = 7;
+  const cardW = (flowW - cardGap * 3) / 4;
+  const cardY = moduleY - 28;
+  cards.forEach(([num, title, detail], i) => {
+    const local = ease((compile * 1.28 - i * 0.09));
+    const x = flowX1 + i * (cardW + cardGap);
+    ctx.save(); ctx.globalAlpha = local;
+    roundRect(x, cardY, cardW, 56, 9);
+    ctx.fillStyle = "rgba(17,35,44,.92)"; ctx.fill();
+    ctx.strokeStyle = i === 2 ? "rgba(50,214,173,.48)" : "rgba(133,161,181,.2)"; ctx.stroke();
+    mono(num, x + 9, cardY + 14, 6.5, i === 2 ? colors.green : "rgba(109,243,255,.55)");
+    mono(title, x + 9, cardY + 29, 7.5, "rgba(229,241,249,.88)");
+    mono(detail, x + 9, cardY + 43, 5.8, "rgba(148,171,187,.65)");
+    if (i < cards.length - 1) {
+      ctx.strokeStyle = "rgba(109,243,255,.35)";
+      ctx.beginPath(); ctx.moveTo(x + cardW, cardY + 28); ctx.lineTo(x + cardW + cardGap, cardY + 28); ctx.stroke();
+    }
+    ctx.restore();
+  });
+  badge("CONTROL OVERHEAD, NOT ENCODING OVERHEAD", width / 2, bottomY + bottomH - 17, colors.amber, compile);
+}
+
 function phaseForStep(step: number) {
   if (step < 2) {
     return {
@@ -1127,10 +1354,12 @@ export default function PresentPage() {
     screen === 0
       ? scalingPhase(progress)
       : screen === 1
-        ? phaseForStep(step)
+        ? gateComplexityPhase(progress)
         : screen === 2
-          ? parkPhase(progress)
-          : parallelPhase(progress);
+          ? phaseForStep(step)
+          : screen === 3
+            ? parkPhase(progress)
+            : parallelPhase(progress);
 
   const setBoundedProgress = useCallback((next: number) => {
     const bounded = clamp(next);
@@ -1160,8 +1389,10 @@ export default function PresentPage() {
         if (screen === 0) {
           drawScalingComparison(canvasRef.current, progressRef.current);
         } else if (screen === 1) {
-          drawShift(canvasRef.current, progressRef.current * TOTAL_STEPS);
+          drawGateComplexity(canvasRef.current, progressRef.current);
         } else if (screen === 2) {
+          drawShift(canvasRef.current, progressRef.current * TOTAL_STEPS);
+        } else if (screen === 3) {
           drawAodShift(canvasRef.current, progressRef.current);
         } else {
           drawParallelAod(canvasRef.current, progressRef.current);
@@ -1183,7 +1414,7 @@ export default function PresentPage() {
 
   const changeScreen = useCallback(
     (nextScreen: number) => {
-      const bounded = Math.max(0, Math.min(3, nextScreen));
+      const bounded = Math.max(0, Math.min(4, nextScreen));
       if (bounded === screen) return;
       setScreen(bounded);
       setBoundedProgress(0);
@@ -1254,6 +1485,21 @@ export default function PresentPage() {
       note: "Gross examples are finite BB codes · asymptotic statement applies to good qLDPC families",
     },
     {
+      kicker: "Logical gates · the qLDPC tradeoff",
+      title: "Fewer qubits. Harder logical control.",
+      primaryLabel: "Direct physical gate layers",
+      primaryValue: progress < 0.48 ? "1" : "→ protocol",
+      primaryNote: "bitwise CSS → BB instruction stack",
+      costs: [
+        ["CSS blockwise CNOT", "depth 1*", "pairwise connectivity"],
+        ["BB shift automorphism", "14", "physical timesteps each"],
+        ["BB logical measurement", "120 / 216", "gross / two-gross timesteps"],
+        ["Arbitrary Pauli synthesis", "≈18.5", "bicycle measurements · mean"],
+      ],
+      timeline: ["Align blocks", "Bitwise CNOT", "Select BB qubits", "Compile + surgery"],
+      note: "*Blockwise transversal CNOT assumes matching pairwise couplers · BB costs from Tour de Gross Tables 2 and Fig. 9",
+    },
+    {
       kicker: "Fixed-coupler shift · δ = x³y⁻¹",
       title: "One global shift, in physical gates.",
       primaryLabel: "Two-qubit gates executed",
@@ -1301,9 +1547,9 @@ export default function PresentPage() {
   ] as const;
   const current = titles[screen];
   const legends =
-    screen === 0
+    screen <= 1
       ? []
-      : screen === 1
+      : screen === 2
       ? [
           ["legend-circle l", "L data"],
           ["legend-circle r", "R data"],
@@ -1317,7 +1563,7 @@ export default function PresentPage() {
           ["legend-circle r", "R atom"],
           ["aod-line", "moving AOD traps"],
           ["slm-box", "SLM lattice"],
-          ["state-dot", screen === 2 ? "captured wrap strip" : "module motion"],
+          ["state-dot", screen === 3 ? "captured wrap strip" : "module motion"],
         ];
 
   return (
@@ -1333,7 +1579,7 @@ export default function PresentPage() {
           </div>
         </div>
         <nav className="deck-tabs" aria-label="Presentation screens">
-          {["Why qLDPC", "Fixed couplers", "Park ’n Ride", "Parallel column"].map((label, index) => (
+          {["Why qLDPC", "Gate tradeoff", "Fixed couplers", "Park ’n Ride", "Parallel column"].map((label, index) => (
             <button
               key={label}
               className={screen === index ? "is-active" : ""}
@@ -1377,10 +1623,12 @@ export default function PresentPage() {
             screen === 0
               ? "Animated comparison of surface, color, and bivariate bicycle code scaling"
               : screen === 1
-                ? "Animated fixed-coupler shift automorphism"
+                ? "Animated comparison of transversal CSS gates and BB logical-control complexity"
                 : screen === 2
-                  ? "Animated Park-n-Ride AOD shift automorphism"
-                  : "Three Park-n-Ride modules shifting in parallel"
+                  ? "Animated fixed-coupler shift automorphism"
+                  : screen === 3
+                    ? "Animated Park-n-Ride AOD shift automorphism"
+                    : "Three Park-n-Ride modules shifting in parallel"
           }
         />
         {legends.length > 0 && (
@@ -1394,16 +1642,20 @@ export default function PresentPage() {
           <span>
             {screen === 0
               ? "topological patches vs qLDPC block"
-              : screen === 3
-                ? "shared physical directions"
-                : "global permutation"}
+              : screen === 1
+                ? "logical entangling gate"
+                : screen === 4
+                  ? "shared physical directions"
+                  : "global permutation"}
           </span>
           <strong>
             {screen === 0
               ? "1 logical ↔ 12 logical"
-              : screen === 3
-                ? "+x · +y"
-                : "+3x · −1y"}
+              : screen === 1
+                ? "direct layer ↔ control stack"
+                : screen === 4
+                  ? "+x · +y"
+                  : "+3x · −1y"}
           </strong>
         </div>
         <button
@@ -1417,7 +1669,7 @@ export default function PresentPage() {
         <button
           className="deck-edge deck-edge-right"
           onClick={() => changeScreen(screen + 1)}
-          disabled={screen === 3}
+          disabled={screen === 4}
           aria-label="Next presentation screen"
         >
           →
