@@ -2332,7 +2332,7 @@ export default function PresentPage() {
                 alt="Rice University"
               />
             </div>
-            <p className="title-slide-kicker">Park ’n Ride · Bivariate bicycle codes</p>
+            <p className="title-slide-kicker">40th SCI Summer Research Colloquium</p>
             <h1 id="presentation-title">
               <em>Hardware-Aware Compilation and Execution of Bivariate Bicycle Codes on Neutral-Atom Systems</em>
             </h1>
