@@ -8,6 +8,7 @@ const COLS = 12;
 const ROWS = 6;
 const STOPS = [0, 2, 3, 5, 6];
 const SLIDE_STOPS = [
+  [0, 0.28, 0.55, 1],
   [0, 0.23, 0.46, 0.72, 1],
   [0, 0.24, 0.5, 0.74, 1],
   [0, 0.24, 0.48, 0.68, 1],
@@ -38,6 +39,205 @@ const mixPoint = (a: Point, b: Point, t: number): Point => ({
   x: mix(a.x, b.x, t),
   y: mix(a.y, b.y, t),
 });
+
+function connectivityPhase(progress: number) {
+  if (progress <= 0.001) {
+    return {
+      number: "01",
+      label: "Fixed versus reconfigurable connectivity",
+      description: "Superconducting couplers are fabricated in place; neutral-atom interactions follow position.",
+    };
+  }
+  if (progress <= 0.281) {
+    return {
+      number: "02",
+      label: "Bring the AOD column to the middle",
+      description: "Three transported atoms enter Rydberg range of three atoms in the stationary middle column.",
+    };
+  }
+  if (progress <= 0.551) {
+    return {
+      number: "03",
+      label: "Separate the columns",
+      description: "Moving the atoms away removes those interaction edges from the connectivity graph.",
+    };
+  }
+  return {
+    number: "04",
+    label: "Reconnect to the right column",
+    description: "The same transported qubits form a different set of interactions without fixed couplers.",
+  };
+}
+
+function drawConnectivityIntro(canvas: HTMLCanvasElement, progress: number) {
+  const rect = canvas.getBoundingClientRect();
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const pixelWidth = Math.max(1, Math.round(rect.width * dpr));
+  const pixelHeight = Math.max(1, Math.round(rect.height * dpr));
+  if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
+    canvas.width = pixelWidth;
+    canvas.height = pixelHeight;
+  }
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const width = rect.width;
+  const height = rect.height;
+  ctx.clearRect(0, 0, width, height);
+
+  const inset = clamp(width * 0.06, 56, 92);
+  const gap = clamp(width * 0.025, 24, 40);
+  const panelY = 14;
+  const panelH = height - 28;
+  const panelW = (width - inset * 2 - gap) / 2;
+  const pulse = 0.65 + 0.35 * Math.sin(performance.now() / 220);
+  const middleT = ease(progress / 0.28);
+  const separateT = ease((progress - 0.28) / 0.27);
+  const rightT = ease((progress - 0.55) / 0.45);
+  const middleStrength = progress <= 0.28 ? middleT : 1 - separateT;
+  const rightStrength = rightT;
+
+  const roundRect = (x: number, y: number, w: number, h: number, r = 14) => {
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, r);
+  };
+  const panel = (x: number, accent: string) => {
+    ctx.save(); roundRect(x, panelY, panelW, panelH);
+    ctx.fillStyle = "rgba(8,21,32,.72)"; ctx.fill();
+    ctx.globalAlpha = 0.22; ctx.strokeStyle = accent; ctx.stroke(); ctx.restore();
+  };
+  const mono = (text: string, x: number, y: number, size = 9, color = "rgba(190,211,225,.72)", align: CanvasTextAlign = "left") => {
+    ctx.save(); ctx.textAlign = align; ctx.fillStyle = color;
+    ctx.font = `600 ${size}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+    ctx.fillText(text, x, y); ctx.restore();
+  };
+  const node = (x: number, y: number, color: string, radius = 6, alpha = 1) => {
+    ctx.save(); ctx.globalAlpha = alpha; ctx.fillStyle = "#0a1822"; ctx.strokeStyle = color; ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); ctx.restore();
+  };
+  const edge = (a: Point, b: Point, color: string, alpha = 1, widthPx = 1.4) => {
+    ctx.save(); ctx.globalAlpha = alpha; ctx.strokeStyle = color; ctx.lineWidth = widthPx;
+    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); ctx.restore();
+  };
+  const subpanel = (x: number, y: number, w: number, h: number, label: string) => {
+    ctx.save(); roundRect(x, y, w, h, 10); ctx.fillStyle = "rgba(8,19,29,.48)"; ctx.fill();
+    ctx.strokeStyle = "rgba(128,158,180,.14)"; ctx.stroke(); ctx.restore();
+    mono(label, x + 11, y + 18, 6.5, "rgba(137,161,181,.58)");
+  };
+
+  panel(inset, colors.blue);
+  panel(inset + panelW + gap, colors.green);
+  const upperY = panelY + 48;
+  const sectionGap = 9;
+  const sectionH = (panelH - 71 - sectionGap) / 2;
+
+  const drawFixedGrid = (boxX: number, boxY: number, boxW: number, boxH: number, physical: boolean) => {
+    const spacing = clamp(Math.min(boxW, boxH) * 0.23, 34, 54);
+    const cx = boxX + boxW / 2;
+    const cy = boxY + boxH / 2 + 6;
+    const points: Point[][] = [];
+    for (let r = 0; r < 3; r++) {
+      points[r] = [];
+      for (let c = 0; c < 3; c++) points[r][c] = { x: cx + (c - 1) * spacing, y: cy + (r - 1) * spacing };
+    }
+    for (let r = 0; r < 3; r++) {
+      for (let c = 0; c < 3; c++) {
+        if (c < 2) edge(points[r][c], points[r][c + 1], physical ? "rgba(89,167,255,.48)" : "rgba(109,243,255,.64)", 1, physical ? 3.2 : 1.5);
+        if (r < 2) edge(points[r][c], points[r + 1][c], physical ? "rgba(89,167,255,.48)" : "rgba(109,243,255,.64)", 1, physical ? 3.2 : 1.5);
+      }
+    }
+    points.flat().forEach((p) => {
+      if (physical) {
+        ctx.save(); ctx.shadowColor = colors.blue; ctx.shadowBlur = 9;
+        ctx.fillStyle = "#163653"; ctx.strokeStyle = colors.blue; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.arc(p.x, p.y, 9, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); ctx.restore();
+      } else node(p.x, p.y, colors.cyan, 6);
+    });
+  };
+
+  const leftX = inset;
+  mono("SUPERCONDUCTING QUBITS", leftX + 18, panelY + 24, 10, colors.blue);
+  mono("CONNECTIVITY IS FABRICATED INTO THE CHIP", leftX + 18, panelY + 39, 7, "rgba(137,161,181,.58)");
+  subpanel(leftX + 12, upperY, panelW - 24, sectionH, "PHYSICAL LAYOUT · FIXED COUPLERS");
+  drawFixedGrid(leftX + 12, upperY, panelW - 24, sectionH, true);
+  const lowerY = upperY + sectionH + sectionGap;
+  subpanel(leftX + 12, lowerY, panelW - 24, sectionH, "CONNECTIVITY GRAPH · DEGREE ≤ 4");
+  drawFixedGrid(leftX + 12, lowerY, panelW - 24, sectionH, false);
+
+  const rightX = inset + panelW + gap;
+  mono("NEUTRAL-ATOM QUBITS", rightX + 18, panelY + 24, 10, colors.green);
+  mono("CONNECTIVITY FOLLOWS THE ATOMS", rightX + 18, panelY + 39, 7, "rgba(137,161,181,.58)");
+  subpanel(rightX + 12, upperY, panelW - 24, sectionH, "PHYSICAL LAYOUT · AOD TRANSPORT");
+  subpanel(rightX + 12, lowerY, panelW - 24, sectionH, "CONNECTIVITY GRAPH · RECONFIGURABLE");
+
+  const drawMovingSystem = (boxX: number, boxY: number, boxW: number, boxH: number, physical: boolean) => {
+    const centerY = boxY + boxH / 2 + 7;
+    const rowGap = clamp(boxH * 0.22, 28, 43);
+    const baseX = boxX + boxW * 0.2;
+    const middleX = boxX + boxW * 0.52;
+    const rightColumnX = boxX + boxW * 0.8;
+    const middleMeetX = middleX - clamp(boxW * 0.1, 38, 52);
+    const rightMeetX = rightColumnX - clamp(boxW * 0.1, 38, 52);
+    const returnedX = mix(middleMeetX, baseX, separateT);
+    const movingX = progress <= 0.28
+      ? mix(baseX, middleMeetX, middleT)
+      : progress <= 0.55
+        ? returnedX
+        : mix(baseX, rightMeetX, rightT);
+    const moving: Point[] = [];
+    const middle: Point[] = [];
+    const right: Point[] = [];
+    for (let r = 0; r < 3; r++) {
+      const y = centerY + (r - 1) * rowGap;
+      moving.push({ x: movingX, y }); middle.push({ x: middleX, y }); right.push({ x: rightColumnX, y });
+    }
+
+    if (!physical) {
+      for (let r = 0; r < 2; r++) {
+        edge(moving[r], moving[r + 1], "rgba(109,243,255,.35)");
+        edge(middle[r], middle[r + 1], "rgba(50,214,173,.35)");
+        edge(right[r], right[r + 1], "rgba(50,214,173,.35)");
+      }
+      for (let r = 0; r < 3; r++) {
+        edge(moving[r], middle[r], colors.cyan, middleStrength, 2.2);
+        edge(moving[r], right[r], colors.violet, rightStrength, 2.2);
+      }
+    }
+
+    if (physical) {
+      ctx.save(); ctx.strokeStyle = `rgba(109,243,255,${0.35 + pulse * 0.35})`; ctx.lineWidth = 1.2;
+      ctx.shadowColor = colors.cyan; ctx.shadowBlur = 8;
+      ctx.beginPath(); ctx.moveTo(movingX, moving[0].y - 19); ctx.lineTo(movingX, moving[2].y + 19); ctx.stroke(); ctx.restore();
+      [...middle, ...right].forEach((p) => {
+        ctx.fillStyle = "rgba(50,214,173,.12)"; ctx.beginPath(); ctx.arc(p.x, p.y, 18, 0, Math.PI * 2); ctx.fill();
+      });
+      moving.forEach((p) => {
+        const interaction = Math.max(middleStrength, rightStrength);
+        ctx.save(); ctx.globalAlpha = interaction * 0.35;
+        ctx.fillStyle = interaction === rightStrength && rightStrength > middleStrength ? colors.violet : colors.cyan;
+        ctx.beginPath(); ctx.arc(p.x, p.y, 20, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+      });
+    }
+
+    moving.forEach((p) => node(p.x, p.y, colors.cyan, physical ? 7 : 5.5));
+    middle.forEach((p) => node(p.x, p.y, colors.green, physical ? 7 : 5.5));
+    right.forEach((p) => node(p.x, p.y, colors.green, physical ? 7 : 5.5));
+    if (physical) {
+      mono("AOD", movingX, moving[0].y - 26, 6.5, colors.cyan, "center");
+      mono("MIDDLE", middleX, moving[2].y + 30, 6, "rgba(125,174,160,.62)", "center");
+      mono("RIGHT", rightColumnX, moving[2].y + 30, 6, "rgba(125,174,160,.62)", "center");
+    }
+  };
+  drawMovingSystem(rightX + 12, upperY, panelW - 24, sectionH, true);
+  drawMovingSystem(rightX + 12, lowerY, panelW - 24, sectionH, false);
+
+  ctx.save(); ctx.globalAlpha = Math.max(middleStrength, rightStrength);
+  const status = rightStrength > middleStrength ? "AOD ↔ RIGHT" : "AOD ↔ MIDDLE";
+  const statusColor = rightStrength > middleStrength ? colors.violet : colors.cyan;
+  roundRect(rightX + panelW - 126, panelY + 12, 108, 23, 11);
+  ctx.fillStyle = "rgba(12,30,40,.92)"; ctx.fill(); ctx.strokeStyle = `${statusColor}66`; ctx.stroke();
+  mono(status, rightX + panelW - 72, panelY + 27, 6.5, statusColor, "center");
+  ctx.restore();
+}
 
 function classicalBitPhase(progress: number) {
   if (progress < 0.23) {
@@ -1754,18 +1954,20 @@ export default function PresentPage() {
   const step = progress * TOTAL_STEPS;
   const phase =
     screen === 0
-      ? classicalBitPhase(progress)
+      ? connectivityPhase(progress)
       : screen === 1
-        ? logicalQubitPhase(progress)
+        ? classicalBitPhase(progress)
         : screen === 2
-          ? scalingPhase(progress)
+          ? logicalQubitPhase(progress)
           : screen === 3
-            ? gateComplexityPhase(progress)
+            ? scalingPhase(progress)
             : screen === 4
-              ? phaseForStep(step)
+              ? gateComplexityPhase(progress)
               : screen === 5
-                ? parkPhase(progress)
-                : parallelPhase(progress);
+                ? phaseForStep(step)
+                : screen === 6
+                  ? parkPhase(progress)
+                  : parallelPhase(progress);
 
   const setBoundedProgress = useCallback((next: number) => {
     const bounded = clamp(next);
@@ -1799,16 +2001,18 @@ export default function PresentPage() {
       }
       if (canvasRef.current) {
         if (screen === 0) {
-          drawClassicalBitIntro(canvasRef.current, progressRef.current);
+          drawConnectivityIntro(canvasRef.current, progressRef.current);
         } else if (screen === 1) {
-          drawLogicalQubitIntro(canvasRef.current, progressRef.current);
+          drawClassicalBitIntro(canvasRef.current, progressRef.current);
         } else if (screen === 2) {
-          drawScalingComparison(canvasRef.current, progressRef.current);
+          drawLogicalQubitIntro(canvasRef.current, progressRef.current);
         } else if (screen === 3) {
-          drawGateComplexity(canvasRef.current, progressRef.current);
+          drawScalingComparison(canvasRef.current, progressRef.current);
         } else if (screen === 4) {
-          drawShift(canvasRef.current, progressRef.current * TOTAL_STEPS);
+          drawGateComplexity(canvasRef.current, progressRef.current);
         } else if (screen === 5) {
+          drawShift(canvasRef.current, progressRef.current * TOTAL_STEPS);
+        } else if (screen === 6) {
           drawAodShift(canvasRef.current, progressRef.current);
         } else {
           drawParallelAod(canvasRef.current, progressRef.current);
@@ -1831,7 +2035,7 @@ export default function PresentPage() {
 
   const changeScreen = useCallback(
     (nextScreen: number, initialProgress = 0) => {
-      const bounded = Math.max(0, Math.min(6, nextScreen));
+      const bounded = Math.max(0, Math.min(7, nextScreen));
       if (bounded === screen) return;
       transitionRef.current = null;
       setScreen(bounded);
@@ -1855,7 +2059,7 @@ export default function PresentPage() {
     const nextStop = SLIDE_STOPS[screen].find((stop) => stop > current + 0.012);
     if (nextStop !== undefined) {
       animateTo(nextStop);
-    } else if (screen < 6) {
+    } else if (screen < 7) {
       changeScreen(screen + 1, 0);
     }
   }, [animateTo, changeScreen, screen]);
@@ -1915,8 +2119,37 @@ export default function PresentPage() {
   const parkAodPhases =
     progress < 0.11 ? 0 : progress < 0.69 ? 1 : 2;
   const parallelDrops = Math.round(3 * ease((progress * 5 - 3.15) / 1.45));
+  const connectivityTarget =
+    progress <= 0.001
+      ? "fixed ↔ mobile"
+      : progress <= 0.281
+        ? "middle"
+        : progress <= 0.551
+          ? "separated"
+          : "right";
+  const adaptiveLinks =
+    progress <= 0.28
+      ? Math.round(3 * ease(progress / 0.28))
+      : progress <= 0.55
+        ? Math.round(3 * (1 - ease((progress - 0.28) / 0.27)))
+        : Math.round(3 * ease((progress - 0.55) / 0.45));
 
   const titles = [
+    {
+      kicker: "Hardware connectivity · the architectural divide",
+      title: "Fixed couplers or interactions that move?",
+      primaryLabel: "Connectivity model",
+      primaryValue: connectivityTarget,
+      primaryNote: "fabricated edges versus position-defined edges",
+      costs: [
+        ["Superconducting grid", "degree ≤ 4", "fixed nearest neighbors"],
+        ["Transported atoms", "3", "one AOD column"],
+        ["Active Rydberg links", adaptiveLinks.toString(), "change with position"],
+        ["Hardware rewiring", "0", "motion changes the graph"],
+      ],
+      timeline: ["Fixed grid", "Meet middle", "Separate", "Meet right"],
+      note: "Conceptual connectivity comparison · Rydberg interactions appear when transported atoms enter the interaction radius",
+    },
     {
       kicker: "Classical error correction · the intuition",
       title: "One bad bit should not decide the answer.",
@@ -2025,9 +2258,9 @@ export default function PresentPage() {
   ] as const;
   const current = titles[screen];
   const legends =
-    screen <= 3
+    screen <= 4
       ? []
-      : screen === 4
+      : screen === 5
       ? [
           ["legend-circle l", "L data"],
           ["legend-circle r", "R data"],
@@ -2041,7 +2274,7 @@ export default function PresentPage() {
           ["legend-circle r", "R atom"],
           ["aod-line", "moving AOD traps"],
           ["slm-box", "SLM lattice"],
-          ["state-dot", screen === 5 ? "captured wrap strip" : "module motion"],
+          ["state-dot", screen === 6 ? "captured wrap strip" : "module motion"],
         ];
 
   return (
@@ -2057,7 +2290,7 @@ export default function PresentPage() {
           </div>
         </div>
         <nav className="deck-tabs" aria-label="Presentation screens">
-          {["Classical bits", "Logical qubits", "Why qLDPC", "Gate tradeoff", "Fixed couplers", "Park ’n Ride", "Parallel column"].map((label, index) => (
+          {["Connectivity", "Classical bits", "Logical qubits", "Why qLDPC", "Gate tradeoff", "Fixed couplers", "Park ’n Ride", "Parallel column"].map((label, index) => (
             <button
               key={label}
               className={screen === index ? "is-active" : ""}
@@ -2099,18 +2332,20 @@ export default function PresentPage() {
           className="present-canvas"
           aria-label={
             screen === 0
-              ? "Animated classical bit flip and seven-bit majority-vote repetition code"
+              ? "Animated comparison of fixed superconducting connectivity and mobile neutral-atom connectivity"
               : screen === 1
-                ? "Animated introduction to physical errors and logical qubit encoding with a color code"
+                ? "Animated classical bit flip and seven-bit majority-vote repetition code"
                 : screen === 2
-                  ? "Animated comparison of surface, color, and bivariate bicycle code scaling"
+                  ? "Animated introduction to physical errors and logical qubit encoding with a color code"
                   : screen === 3
-                    ? "Animated comparison of transversal CSS gates and BB logical-control complexity"
+                    ? "Animated comparison of surface, color, and bivariate bicycle code scaling"
                     : screen === 4
-                      ? "Animated fixed-coupler shift automorphism"
+                      ? "Animated comparison of transversal CSS gates and BB logical-control complexity"
                       : screen === 5
-                        ? "Animated Park-n-Ride AOD shift automorphism"
-                        : "Three Park-n-Ride modules shifting in parallel"
+                        ? "Animated fixed-coupler shift automorphism"
+                        : screen === 6
+                          ? "Animated Park-n-Ride AOD shift automorphism"
+                          : "Three Park-n-Ride modules shifting in parallel"
           }
         />
         {legends.length > 0 && (
@@ -2123,29 +2358,33 @@ export default function PresentPage() {
         <div className="present-shift">
           <span>
             {screen === 0
-              ? "one classical value"
+              ? "physical layout ↔ connectivity graph"
               : screen === 1
-                ? "one quantum state"
+                ? "one classical value"
                 : screen === 2
-                  ? "topological patches vs qLDPC block"
+                  ? "one quantum state"
                   : screen === 3
-                    ? "logical entangling gate"
-                    : screen === 6
-                      ? "shared physical directions"
-                      : "global permutation"}
+                    ? "topological patches vs qLDPC block"
+                    : screen === 4
+                      ? "logical entangling gate"
+                      : screen === 7
+                        ? "shared physical directions"
+                        : "global permutation"}
           </span>
           <strong>
             {screen === 0
-              ? "1 → 1111111"
+              ? "fixed edges ↔ moving edges"
               : screen === 1
-                ? "|ψ⟩ → |ψ⟩ₗ"
+                ? "1 → 1111111"
                 : screen === 2
-                  ? "1 logical ↔ 12 logical"
+                  ? "|ψ⟩ → |ψ⟩ₗ"
                   : screen === 3
-                    ? "direct layer ↔ control stack"
-                    : screen === 6
-                      ? "+x · +y"
-                      : "+3x · −1y"}
+                    ? "1 logical ↔ 12 logical"
+                    : screen === 4
+                      ? "direct layer ↔ control stack"
+                      : screen === 7
+                        ? "+x · +y"
+                        : "+3x · −1y"}
           </strong>
         </div>
         <button
@@ -2159,7 +2398,7 @@ export default function PresentPage() {
         <button
           className="deck-edge deck-edge-right"
           onClick={advance}
-          disabled={screen === 6 && progress >= 0.999}
+          disabled={screen === 7 && progress >= 0.999}
           aria-label="Next state or presentation screen"
         >
           →
