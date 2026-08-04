@@ -17,6 +17,7 @@ const SLIDE_STOPS = [
   [0, 2 / 6, 3 / 6, 5 / 6, 1],
   [0, 0.34, 0.64, 0.92],
   [0, 0.28, 0.53, 0.918],
+  [0, 0.32, 0.68, 1],
 ] as const;
 const STEP_TRANSITION_MS = 720;
 
@@ -1874,6 +1875,261 @@ function drawParallelAod(canvas: HTMLCanvasElement, progress: number) {
   });
 }
 
+function drawPlacementOrdering(canvas: HTMLCanvasElement, progress: number) {
+  const rect = canvas.getBoundingClientRect();
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const pixelWidth = Math.max(1, Math.round(rect.width * dpr));
+  const pixelHeight = Math.max(1, Math.round(rect.height * dpr));
+  if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
+    canvas.width = pixelWidth;
+    canvas.height = pixelHeight;
+  }
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const width = rect.width;
+  const height = rect.height;
+  ctx.clearRect(0, 0, width, height);
+
+  const conflictT = ease((progress - 0.08) / 0.24);
+  const spectralT = ease((progress - 0.34) / 0.34);
+  const resultsT = ease((progress - 0.72) / 0.28);
+  const inset = clamp(width * 0.045, 48, 82);
+  const leftX = inset;
+  const leftW = width * 0.455 - inset;
+  const panelY = 16;
+  const panelH = height - 32;
+  const graphTop = panelY + 88;
+  const metricsH = clamp(height * 0.13, 82, 112);
+  const graphBottom = panelY + panelH - metricsH - 35;
+  const graphH = graphBottom - graphTop;
+  const columnGap = clamp(leftW * 0.026, 8, 15);
+  const columnW = (leftW - columnGap * 2) / 3;
+  const moduleW = clamp(columnW * 0.42, 64, 94);
+  const moduleH = clamp(graphH * 0.11, 34, 48);
+
+  const startSlots = [
+    [0, 0], [1, 2], [2, 0],
+    [0, 2], [2, 2], [1, 0],
+    [0, 1], [2, 1], [1, 1],
+  ];
+  const spectralSlots = [
+    [0, 0], [0, 1], [0, 2],
+    [1, 0], [1, 1], [1, 2],
+    [2, 0], [2, 1], [2, 2],
+  ];
+  const interactions = [
+    [0, 1], [1, 2], [0, 2],
+    [3, 4], [4, 5], [3, 5],
+    [6, 7], [7, 8], [6, 8],
+  ];
+
+  const pointFor = (moduleIndex: number): Point => {
+    const [startCol, startRow] = startSlots[moduleIndex];
+    const [endCol, endRow] = spectralSlots[moduleIndex];
+    const col = mix(startCol, endCol, spectralT);
+    const row = mix(startRow, endRow, spectralT);
+    return {
+      x: leftX + columnW / 2 + col * (columnW + columnGap),
+      y: graphTop + graphH * (0.19 + row * 0.31),
+    };
+  };
+
+  const roundRect = (x: number, y: number, w: number, h: number, radius = 12) => {
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h, radius);
+  };
+  const mono = (
+    text: string,
+    x: number,
+    y: number,
+    size = 8,
+    color = "rgba(176,201,219,.68)",
+    align: CanvasTextAlign = "left",
+  ) => {
+    ctx.save();
+    ctx.textAlign = align;
+    ctx.fillStyle = color;
+    ctx.font = `600 ${size}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+    ctx.fillText(text, x, y);
+    ctx.restore();
+  };
+
+  ctx.save();
+  roundRect(leftX, panelY, leftW, panelH, 16);
+  ctx.fillStyle = "rgba(7,18,31,.76)";
+  ctx.fill();
+  ctx.strokeStyle = `rgba(${Math.round(mix(255, 50, spectralT))}, ${Math.round(mix(189, 214, spectralT))}, ${Math.round(mix(102, 173, spectralT))}, .24)`;
+  ctx.stroke();
+  ctx.restore();
+
+  mono("THE PLACEMENT PROBLEM", leftX + 20, panelY + 28, 10, spectralT > 0.55 ? colors.green : colors.amber);
+  mono("SAME BB MODULES · DIFFERENT PHYSICAL ORDER", leftX + 20, panelY + 46, 7, "rgba(137,161,181,.58)");
+  ctx.save();
+  roundRect(leftX + leftW - 175, panelY + 17, 154, 31, 8);
+  ctx.fillStyle = spectralT > 0.5 ? "rgba(50,214,173,.09)" : "rgba(255,189,102,.08)";
+  ctx.fill();
+  ctx.strokeStyle = spectralT > 0.5 ? "rgba(50,214,173,.34)" : "rgba(255,189,102,.3)";
+  ctx.stroke();
+  ctx.restore();
+  mono(
+    spectralT > 0.5 ? "SPECTRAL ORDERING" : "ARBITRARY ORDERING",
+    leftX + leftW - 98,
+    panelY + 37,
+    7.2,
+    spectralT > 0.5 ? colors.green : colors.amber,
+    "center",
+  );
+
+  for (let col = 0; col < 3; col++) {
+    const x = leftX + col * (columnW + columnGap);
+    ctx.save();
+    roundRect(x, graphTop - 12, columnW, graphH + 24, 11);
+    ctx.fillStyle = "rgba(9,24,36,.44)";
+    ctx.fill();
+    ctx.strokeStyle = spectralT > 0.4 ? "rgba(50,214,173,.16)" : "rgba(117,151,176,.14)";
+    ctx.stroke();
+    ctx.restore();
+    mono(`COMPUTE COLUMN ${col + 1}`, x + columnW / 2, graphTop + 5, 6.3, "rgba(130,157,178,.5)", "center");
+  }
+
+  const longMidpoints: Point[] = [];
+  interactions.forEach(([aIndex, bIndex], edgeIndex) => {
+    const a = pointFor(aIndex);
+    const b = pointFor(bIndex);
+    const distance = Math.hypot(a.x - b.x, a.y - b.y);
+    const isLong = distance > columnW * 0.78;
+    if (isLong && longMidpoints.length < 3) {
+      longMidpoints.push({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
+    }
+    ctx.save();
+    ctx.globalAlpha = 0.42 + spectralT * 0.34;
+    ctx.strokeStyle = spectralT > 0.45 ? colors.green : isLong ? colors.amber : colors.blue;
+    ctx.lineWidth = spectralT > 0.45 ? 2.1 : isLong ? 1.8 : 1.15;
+    if (isLong && spectralT < 0.35) ctx.setLineDash([5, 4]);
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    const bow = (edgeIndex % 3 - 1) * 25 * (1 - spectralT);
+    ctx.quadraticCurveTo((a.x + b.x) / 2, (a.y + b.y) / 2 + bow, b.x, b.y);
+    ctx.stroke();
+    ctx.restore();
+  });
+
+  if (conflictT > 0.02 && spectralT < 0.88) {
+    longMidpoints.forEach((point, index) => {
+      const visibility = conflictT * (1 - spectralT);
+      const pulse = 1 + 0.12 * Math.sin(performance.now() / 180 + index);
+      ctx.save();
+      ctx.globalAlpha = visibility;
+      ctx.strokeStyle = colors.pink;
+      ctx.lineWidth = 2;
+      ctx.shadowColor = colors.pink;
+      ctx.shadowBlur = 13;
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, 9 * pulse, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    });
+    mono("LONG BRIDGES + AOD MOVE CONFLICTS", leftX + leftW / 2, graphBottom + 20, 7.5, colors.pink, "center");
+  }
+
+  for (let moduleIndex = 0; moduleIndex < 9; moduleIndex++) {
+    const point = pointFor(moduleIndex);
+    const group = Math.floor(moduleIndex / 3);
+    const accent = [colors.blue, colors.violet, colors.green][group];
+    ctx.save();
+    roundRect(point.x - moduleW / 2, point.y - moduleH / 2, moduleW, moduleH, 8);
+    ctx.fillStyle = "rgba(11,30,44,.95)";
+    ctx.fill();
+    ctx.strokeStyle = accent;
+    ctx.globalAlpha = 0.92;
+    ctx.stroke();
+    ctx.restore();
+    mono(`M${moduleIndex}`, point.x, point.y + 3, 8.5, accent, "center");
+    mono(`12L · 288P`, point.x, point.y + 15, 5.5, "rgba(146,173,193,.54)", "center");
+  }
+
+  if (spectralT > 0.35) {
+    ctx.save();
+    ctx.globalAlpha = ease((spectralT - 0.35) / 0.65);
+    roundRect(leftX + 16, graphTop + 13, leftW - 32, 30, 8);
+    ctx.fillStyle = "rgba(50,214,173,.075)";
+    ctx.fill();
+    ctx.strokeStyle = "rgba(50,214,173,.24)";
+    ctx.stroke();
+    ctx.restore();
+    mono("FIEDLER ORDER → STRONGLY INTERACTING MODULES STAY CLOSE", leftX + leftW / 2, graphTop + 33, 6.9, colors.green, "center");
+  }
+
+  const metricY = panelY + panelH - metricsH - 14;
+  const metricGap = 9;
+  const metricW = (leftW - 40 - metricGap * 2) / 3;
+  const metrics = [
+    ["AVG PARTNER TRAVEL", mix(550.59, 361.91, spectralT), "", "34% LOWER"],
+    ["BRIDGE ROUNDS / LAYER", mix(14.62, 8.02, spectralT), "", "45% FEWER"],
+    ["BRIDGE MICRO-STEPS", mix(1491.3, 810.0, spectralT), "", "46% FEWER"],
+  ] as const;
+  metrics.forEach(([label, value, suffix, improvement], index) => {
+    const x = leftX + 20 + index * (metricW + metricGap);
+    ctx.save();
+    roundRect(x, metricY, metricW, metricsH, 10);
+    ctx.fillStyle = spectralT > 0.4 ? "rgba(50,214,173,.055)" : "rgba(255,189,102,.045)";
+    ctx.fill();
+    ctx.strokeStyle = spectralT > 0.4 ? "rgba(50,214,173,.2)" : "rgba(255,189,102,.16)";
+    ctx.stroke();
+    ctx.restore();
+    mono(label, x + 10, metricY + 20, 5.8, "rgba(134,161,181,.62)");
+    const digits = index === 0 ? value.toFixed(0) : index === 1 ? value.toFixed(1) : value.toFixed(0);
+    mono(`${digits}${suffix}`, x + 10, metricY + 48, 15, spectralT > 0.4 ? colors.green : colors.amber);
+    if (spectralT > 0.55) {
+      ctx.save(); ctx.globalAlpha = ease((spectralT - 0.55) / 0.45);
+      mono(improvement, x + 10, metricY + metricsH - 12, 6.2, colors.green);
+      ctx.restore();
+    }
+  });
+
+  const rightX = width * 0.505;
+  ctx.save();
+  ctx.globalAlpha = 0.18 + resultsT * 0.2;
+  roundRect(rightX, panelY, width - rightX - inset, panelH, 16);
+  ctx.fillStyle = "rgba(6,17,28,.7)";
+  ctx.fill();
+  ctx.strokeStyle = "rgba(50,214,173,.24)";
+  ctx.stroke();
+  ctx.restore();
+  mono("PARK-N-RIDE RESULTS", rightX + 20, panelY + 28, 10, colors.green);
+  mono("SPECTRAL PLACEMENT WINS ACROSS BOTH SCALING AXES", rightX + 20, panelY + 46, 7, "rgba(137,161,181,.58)");
+}
+
+function placementPhase(progress: number) {
+  if (progress < 0.18) {
+    return {
+      number: "01",
+      label: "Pack modules into compute columns",
+      description: "The same BB modules can be ordered many different ways on the atom array.",
+    };
+  }
+  if (progress < 0.5) {
+    return {
+      number: "02",
+      label: "Long partners create conflicts",
+      description: "Distant joint-measurement partners need longer bridge travel and more serialized motion.",
+    };
+  }
+  if (progress < 0.82) {
+    return {
+      number: "03",
+      label: "Order the interaction graph spectrally",
+      description: "Fiedler ordering co-locates strongly interacting modules before column packing.",
+    };
+  }
+  return {
+    number: "04",
+    label: "Spectral placement wins",
+    description: "The paper reports the lowest estimated runtime at every size and every column capacity.",
+  };
+}
+
 function parkPhase(progress: number) {
   const phase = progress * 5;
   if (phase < 0.55) {
@@ -1971,7 +2227,9 @@ export default function PresentPage() {
                   ? phaseForStep(step)
                   : screen === 7
                     ? parkPhase(progress)
-                    : parallelPhase(progress);
+                    : screen === 8
+                      ? parallelPhase(progress)
+                      : placementPhase(progress);
 
   const setBoundedProgress = useCallback((next: number) => {
     const bounded = clamp(next);
@@ -2020,6 +2278,8 @@ export default function PresentPage() {
           drawAodShift(canvasRef.current, progressRef.current);
         } else if (screen === 8) {
           drawParallelAod(canvasRef.current, progressRef.current);
+        } else if (screen === 9) {
+          drawPlacementOrdering(canvasRef.current, progressRef.current);
         }
       }
       frameRef.current = requestAnimationFrame(tick);
@@ -2039,7 +2299,7 @@ export default function PresentPage() {
 
   const changeScreen = useCallback(
     (nextScreen: number, initialProgress = 0) => {
-      const bounded = Math.max(0, Math.min(8, nextScreen));
+      const bounded = Math.max(0, Math.min(9, nextScreen));
       if (bounded === screen) return;
       transitionRef.current = null;
       setScreen(bounded);
@@ -2063,7 +2323,7 @@ export default function PresentPage() {
     const nextStop = slideStops.find((stop) => stop > current + 0.012);
     if (nextStop !== undefined) {
       animateTo(nextStop);
-    } else if (screen < 8) {
+    } else if (screen < 9) {
       changeScreen(screen + 1, 0);
     }
   }, [animateTo, changeScreen, screen, slideStops]);
@@ -2267,10 +2527,25 @@ export default function PresentPage() {
       timeline: ["Roll x", "Roll y", "Offsets", "Staggered SLM drop"],
       note: "Shared directions preserve AOD ordering · modules drop as they align",
     },
+    {
+      kicker: "Static module placement · spectral seriation",
+      title: "Where modules sit determines how far bridges move.",
+      primaryLabel: "Placement strategy",
+      primaryValue: "spectral",
+      primaryNote: "weighted interaction graph → compute columns",
+      costs: [
+        ["Partner travel", "−34%", "at 113 modules vs. greedy"],
+        ["Bridge rounds", "−45%", "per logical layer"],
+        ["Bridge micro-steps", "−46%", "motion-time proxy"],
+        ["Runtime rank", "#1", "all sizes + capacities"],
+      ],
+      timeline: ["Arbitrary order", "Move conflicts", "Spectral order", "Measured results"],
+      note: "Park-n-Ride Figs. 7–8 and Table II · module order changes travel distance and AOD contention",
+    },
   ] as const;
   const current = titles[screen];
   const legends =
-    screen <= 5
+    screen <= 5 || screen === 9
       ? []
       : screen === 6
       ? [
@@ -2302,7 +2577,7 @@ export default function PresentPage() {
           </div>
         </div>
         <nav className="deck-tabs" aria-label="Presentation screens">
-          {["Title", "Connectivity", "Classical bits", "Logical qubits", "Why qLDPC", "Gate tradeoff", "Fixed couplers", "Park ’n Ride", "Parallel column"].map((label, index) => (
+          {["Title", "Connectivity", "Classical bits", "Logical qubits", "Why qLDPC", "Gate tradeoff", "Fixed couplers", "Park ’n Ride", "Parallel column", "Placement results"].map((label, index) => (
             <button
               key={label}
               className={screen === index ? "is-active" : ""}
@@ -2372,9 +2647,46 @@ export default function PresentPage() {
                         ? "Animated fixed-coupler shift automorphism"
                         : screen === 7
                           ? "Animated Park-n-Ride AOD shift automorphism"
-                          : "Three Park-n-Ride modules shifting in parallel"
+                          : screen === 8
+                            ? "Three Park-n-Ride modules shifting in parallel"
+                            : "Animated comparison of arbitrary and spectral BB-module placement with Park-n-Ride result plots"
           }
         />}
+        {screen === 9 && (
+          <div className="placement-result-plots">
+            <figure
+              style={{
+                opacity: ease((progress - 0.72) / 0.16),
+                transform: `translateY(${mix(18, 0, ease((progress - 0.72) / 0.16))}px)`,
+              }}
+            >
+              <div className="placement-plot-label"><span>FIG. 7</span> Scaling with circuit size</div>
+              <img
+                src={`${import.meta.env.BASE_URL}paper-results/figure-7-runtime-vs-modules.png`}
+                alt="Park-n-Ride Figure 7: spectral placement has the lowest average estimated runtime at every module count"
+              />
+            </figure>
+            <figure
+              style={{
+                opacity: ease((progress - 0.8) / 0.16),
+                transform: `translateY(${mix(18, 0, ease((progress - 0.8) / 0.16))}px)`,
+              }}
+            >
+              <div className="placement-plot-label"><span>FIG. 8</span> Scaling with column capacity</div>
+              <img
+                src={`${import.meta.env.BASE_URL}paper-results/figure-8-runtime-vs-capacity.png`}
+                alt="Park-n-Ride Figure 8: spectral placement has the lowest average estimated runtime at every compute-column capacity"
+              />
+            </figure>
+            <div
+              className="placement-takeaway"
+              style={{ opacity: ease((progress - 0.91) / 0.09) }}
+            >
+              <strong>Spectral is best in every comparison.</strong>
+              <span>At 113 modules: &gt;2 s faster than arbitrary placement · 45% fewer bridge rounds than greedy.</span>
+            </div>
+          </div>
+        )}
         {legends.length > 0 && (
           <div className="present-legend" aria-hidden="true">
             {legends.map(([className, label]) => (
@@ -2394,6 +2706,8 @@ export default function PresentPage() {
                     ? "topological patches vs qLDPC block"
                     : screen === 5
                       ? "logical entangling gate"
+                      : screen === 9
+                        ? "weighted module-interaction graph"
                       : screen === 8
                         ? "shared physical directions"
                         : "global permutation"}
@@ -2409,6 +2723,8 @@ export default function PresentPage() {
                     ? "1 logical ↔ 12 logical"
                     : screen === 5
                       ? "direct layer ↔ control stack"
+                      : screen === 9
+                        ? "Fiedler order → column packing"
                       : screen === 8
                         ? "+x · +y"
                         : "+3x · −1y"}
@@ -2425,7 +2741,7 @@ export default function PresentPage() {
         <button
           className="deck-edge deck-edge-right"
           onClick={advance}
-          disabled={screen === 8 && progress >= finalStop - 0.001}
+          disabled={screen === 9 && progress >= finalStop - 0.001}
           aria-label="Next state or presentation screen"
         >
           →
