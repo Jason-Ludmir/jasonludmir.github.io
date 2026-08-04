@@ -7,6 +7,16 @@ const RUN_TIME_MS = 12_000;
 const COLS = 12;
 const ROWS = 6;
 const STOPS = [0, 2, 3, 5, 6];
+const SLIDE_STOPS = [
+  [0, 0.23, 0.46, 0.72, 1],
+  [0, 0.24, 0.5, 0.74, 1],
+  [0, 0.24, 0.48, 0.68, 1],
+  [0, 0.22, 0.48, 0.7, 1],
+  [0, 2 / 6, 3 / 6, 5 / 6, 1],
+  [0, 0.11, 0.39, 0.69, 1],
+  [0, 0.28, 0.53, 0.64, 1],
+] as const;
+const STEP_TRANSITION_MS = 720;
 
 type Point = { x: number; y: number };
 type NodeKind = "L" | "R" | "X" | "Z";
@@ -1733,9 +1743,14 @@ export default function PresentPage() {
   const frameRef = useRef<number | null>(null);
   const lastTimeRef = useRef<number | null>(null);
   const progressRef = useRef(0);
+  const transitionRef = useRef<{
+    from: number;
+    to: number;
+    start: number | null;
+  } | null>(null);
   const [screen, setScreen] = useState(0);
   const [progress, setProgress] = useState(0);
-  const [playing, setPlaying] = useState(true);
+  const [playing, setPlaying] = useState(false);
   const step = progress * TOTAL_STEPS;
   const phase =
     screen === 0
@@ -1767,7 +1782,13 @@ export default function PresentPage() {
       if (lastTimeRef.current === null) lastTimeRef.current = time;
       const delta = time - lastTimeRef.current;
       lastTimeRef.current = time;
-      if (playing) {
+      const transition = transitionRef.current;
+      if (transition) {
+        if (transition.start === null) transition.start = time;
+        const transitionProgress = clamp((time - transition.start) / STEP_TRANSITION_MS);
+        setBoundedProgress(mix(transition.from, transition.to, ease(transitionProgress)));
+        if (transitionProgress >= 1) transitionRef.current = null;
+      } else if (playing) {
         const next = progressRef.current + delta / RUN_TIME_MS;
         if (next >= 1) {
           setBoundedProgress(1);
@@ -1803,30 +1824,62 @@ export default function PresentPage() {
   }, [playing, screen, setBoundedProgress]);
 
   const replay = useCallback(() => {
+    transitionRef.current = null;
     setBoundedProgress(0);
     setPlaying(true);
   }, [setBoundedProgress]);
 
   const changeScreen = useCallback(
-    (nextScreen: number) => {
+    (nextScreen: number, initialProgress = 0) => {
       const bounded = Math.max(0, Math.min(6, nextScreen));
       if (bounded === screen) return;
+      transitionRef.current = null;
       setScreen(bounded);
-      setBoundedProgress(0);
-      setPlaying(true);
+      setBoundedProgress(initialProgress);
+      setPlaying(false);
     },
     [screen, setBoundedProgress],
   );
+
+  const animateTo = useCallback((target: number) => {
+    setPlaying(false);
+    transitionRef.current = {
+      from: progressRef.current,
+      to: clamp(target),
+      start: null,
+    };
+  }, []);
+
+  const advance = useCallback(() => {
+    const current = progressRef.current;
+    const nextStop = SLIDE_STOPS[screen].find((stop) => stop > current + 0.012);
+    if (nextStop !== undefined) {
+      animateTo(nextStop);
+    } else if (screen < 6) {
+      changeScreen(screen + 1, 0);
+    }
+  }, [animateTo, changeScreen, screen]);
+
+  const retreat = useCallback(() => {
+    const current = progressRef.current;
+    const previousStops = [...SLIDE_STOPS[screen]].reverse();
+    const previousStop = previousStops.find((stop) => stop < current - 0.012);
+    if (previousStop !== undefined) {
+      animateTo(previousStop);
+    } else if (screen > 0) {
+      changeScreen(screen - 1, 1);
+    }
+  }, [animateTo, changeScreen, screen]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "ArrowRight") {
         event.preventDefault();
-        changeScreen(screen + 1);
+        advance();
       }
       if (event.key === "ArrowLeft") {
         event.preventDefault();
-        changeScreen(screen - 1);
+        retreat();
       }
       if (event.key === " ") {
         event.preventDefault();
@@ -1843,7 +1896,7 @@ export default function PresentPage() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [changeScreen, replay, screen]);
+  }, [advance, replay, retreat]);
 
   const cnotCount =
     step < 3
@@ -2097,17 +2150,17 @@ export default function PresentPage() {
         </div>
         <button
           className="deck-edge deck-edge-left"
-          onClick={() => changeScreen(screen - 1)}
-          disabled={screen === 0}
-          aria-label="Previous presentation screen"
+          onClick={retreat}
+          disabled={screen === 0 && progress <= 0.001}
+          aria-label="Previous state or presentation screen"
         >
           ←
         </button>
         <button
           className="deck-edge deck-edge-right"
-          onClick={() => changeScreen(screen + 1)}
-          disabled={screen === 6}
-          aria-label="Next presentation screen"
+          onClick={advance}
+          disabled={screen === 6 && progress >= 0.999}
+          aria-label="Next state or presentation screen"
         >
           →
         </button>
@@ -2118,7 +2171,10 @@ export default function PresentPage() {
           className="present-play"
           onClick={() => {
             if (progress >= 1) replay();
-            else setPlaying((value) => !value);
+            else {
+              transitionRef.current = null;
+              setPlaying((value) => !value);
+            }
           }}
         >
           <span className={playing ? "pause-icon" : "play-icon"} />
@@ -2134,6 +2190,7 @@ export default function PresentPage() {
             style={{ "--timeline-progress": `${progress * 100}%` } as React.CSSProperties}
             aria-label="Shift timeline"
             onChange={(event) => {
+              transitionRef.current = null;
               setPlaying(false);
               setBoundedProgress(Number(event.target.value));
             }}
