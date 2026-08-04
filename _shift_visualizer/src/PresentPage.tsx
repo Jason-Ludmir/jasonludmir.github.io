@@ -9,13 +9,13 @@ const ROWS = 6;
 const STOPS = [0, 2, 3, 5, 6];
 const SLIDE_STOPS = [
   [0, 0.28, 0.55, 1],
-  [0, 0.23, 0.46, 0.72, 1],
-  [0, 0.24, 0.5, 0.74, 1],
-  [0, 0.24, 0.48, 0.68, 1],
-  [0, 0.22, 0.48, 0.7, 1],
+  [0, 0.42, 0.68, 1],
+  [0, 0.46, 0.7, 1],
+  [0, 0.6, 0.72, 0.82, 0.92],
+  [0, 0.22, 0.42, 0.62, 0.94],
   [0, 2 / 6, 3 / 6, 5 / 6, 1],
-  [0, 0.11, 0.39, 0.69, 1],
-  [0, 0.28, 0.53, 0.64, 1],
+  [0, 0.34, 0.64, 0.92],
+  [0, 0.28, 0.53, 0.918],
 ] as const;
 const STEP_TRANSITION_MS = 720;
 
@@ -240,21 +240,21 @@ function drawConnectivityIntro(canvas: HTMLCanvasElement, progress: number) {
 }
 
 function classicalBitPhase(progress: number) {
-  if (progress < 0.23) {
+  if (progress <= 0.001) {
     return {
       number: "01",
       label: "Store one classical bit",
       description: "The intended value is written into a single physical device.",
     };
   }
-  if (progress < 0.46) {
+  if (progress <= 0.421) {
     return {
       number: "02",
       label: "One fault flips the answer",
       description: "With only one copy, the receiver cannot tell that 1 became 0.",
     };
   }
-  if (progress < 0.72) {
+  if (progress <= 0.681) {
     return {
       number: "03",
       label: "Add classical redundancy",
@@ -408,21 +408,21 @@ function drawClassicalBitIntro(canvas: HTMLCanvasElement, progress: number) {
 }
 
 function logicalQubitPhase(progress: number) {
-  if (progress < 0.24) {
+  if (progress <= 0.001) {
     return {
       number: "01",
       label: "A physical qubit is fragile",
       description: "Its state is stored in one physical system, so a local error directly changes it.",
     };
   }
-  if (progress < 0.5) {
+  if (progress <= 0.461) {
     return {
       number: "02",
       label: "Errors change the state",
       description: "Bit flips, phase flips, and combined errors move the encoded information.",
     };
   }
-  if (progress < 0.74) {
+  if (progress <= 0.701) {
     return {
       number: "03",
       label: "Encode one logical qubit",
@@ -627,24 +627,26 @@ function drawLogicalQubitIntro(canvas: HTMLCanvasElement, progress: number) {
 }
 
 function scalingPhase(progress: number) {
-  if (progress < 0.24) {
+  if (progress <= 0.001) {
     return {
       number: "01",
       label: "Start with the small codes",
       description: "Distance-3 surface and color patches sit above the gross BB code.",
     };
   }
-  if (progress < 0.68) {
+  if (progress <= 0.601) {
     return {
       number: "02",
       label: "Increase error distance",
-      description: "Distance-7 patches and the distance-18 two-gross block enter at right.",
+      description: "Distance-7 patches and the distance-18 two-gross block enter completely at right.",
     };
   }
   return {
     number: "03",
-    label: "Compare the overhead",
-    description: "Two-dimensional topological patches grow quadratically with distance.",
+    label: progress < 0.919 ? "Reveal the scaling laws" : "Compare the overhead",
+    description: progress < 0.919
+      ? "Each row resolves into its complete physical-qubit scaling law."
+      : "Two-dimensional topological patches grow quadratically with distance.",
   };
 }
 
@@ -675,7 +677,6 @@ function drawScalingComparison(canvas: HTMLCanvasElement, progress: number) {
   const targetX = left + contentWidth * 0.52;
   const formulaX = left + contentWidth * 0.78;
   const reveal = ease((progress - 0.2) / 0.4);
-  const formulaReveal = ease((progress - 0.62) / 0.27);
   const slide = (1 - reveal) * Math.min(56, contentWidth * 0.07);
   const pulse = 0.7 + 0.3 * Math.sin(performance.now() / 260);
 
@@ -929,14 +930,15 @@ function drawScalingComparison(canvas: HTMLCanvasElement, progress: number) {
     accent: string,
   ) => {
     const y = top + row * (rowHeight + gap) + rowHeight / 2;
+    const rowFormulaReveal = ease((progress - (0.62 + row * 0.1)) / 0.1);
     ctx.save();
-    ctx.globalAlpha = formulaReveal;
+    ctx.globalAlpha = rowFormulaReveal;
     ctx.fillStyle = "rgba(130, 153, 173, .66)";
     ctx.font = "500 7px ui-monospace, SFMono-Regular, Menlo, monospace";
     ctx.fillText("PHYSICAL-QUBIT SCALING", formulaX, y - 18);
     ctx.fillStyle = accent;
     ctx.shadowColor = accent;
-    ctx.shadowBlur = 12 * formulaReveal;
+    ctx.shadowBlur = 12 * rowFormulaReveal;
     ctx.font = `500 ${clamp(width * 0.018, 18, 30)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
     ctx.fillText(formula, formulaX, y + 7);
     ctx.shadowBlur = 0;
@@ -1047,7 +1049,7 @@ function drawGateComplexity(canvas: HTMLCanvasElement, progress: number) {
   const topH = height * 0.38;
   const bottomY = topY + topH + 12;
   const bottomH = height - bottomY - 12;
-  const pairReveal = ease((progress - 0.04) / 0.2);
+  const pairReveal = ease((progress - 0.04) / 0.18);
   const fire = ease((progress - 0.22) / 0.2);
   const bbReveal = ease((progress - 0.44) / 0.18);
   const compile = ease((progress - 0.66) / 0.28);
@@ -1951,6 +1953,8 @@ export default function PresentPage() {
   const [screen, setScreen] = useState(0);
   const [progress, setProgress] = useState(0);
   const [playing, setPlaying] = useState(false);
+  const slideStops = SLIDE_STOPS[screen];
+  const finalStop = slideStops[slideStops.length - 1];
   const step = progress * TOTAL_STEPS;
   const phase =
     screen === 0
@@ -1992,8 +1996,8 @@ export default function PresentPage() {
         if (transitionProgress >= 1) transitionRef.current = null;
       } else if (playing) {
         const next = progressRef.current + delta / RUN_TIME_MS;
-        if (next >= 1) {
-          setBoundedProgress(1);
+        if (next >= finalStop) {
+          setBoundedProgress(finalStop);
           setPlaying(false);
         } else {
           setBoundedProgress(next);
@@ -2025,7 +2029,7 @@ export default function PresentPage() {
       if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
       lastTimeRef.current = null;
     };
-  }, [playing, screen, setBoundedProgress]);
+  }, [finalStop, playing, screen, setBoundedProgress]);
 
   const replay = useCallback(() => {
     transitionRef.current = null;
@@ -2056,24 +2060,25 @@ export default function PresentPage() {
 
   const advance = useCallback(() => {
     const current = progressRef.current;
-    const nextStop = SLIDE_STOPS[screen].find((stop) => stop > current + 0.012);
+    const nextStop = slideStops.find((stop) => stop > current + 0.012);
     if (nextStop !== undefined) {
       animateTo(nextStop);
     } else if (screen < 7) {
       changeScreen(screen + 1, 0);
     }
-  }, [animateTo, changeScreen, screen]);
+  }, [animateTo, changeScreen, screen, slideStops]);
 
   const retreat = useCallback(() => {
     const current = progressRef.current;
-    const previousStops = [...SLIDE_STOPS[screen]].reverse();
+    const previousStops = [...slideStops].reverse();
     const previousStop = previousStops.find((stop) => stop < current - 0.012);
     if (previousStop !== undefined) {
       animateTo(previousStop);
     } else if (screen > 0) {
-      changeScreen(screen - 1, 1);
+      const previousSlideStops = SLIDE_STOPS[screen - 1];
+      changeScreen(screen - 1, previousSlideStops[previousSlideStops.length - 1]);
     }
-  }, [animateTo, changeScreen, screen]);
+  }, [animateTo, changeScreen, screen, slideStops]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -2087,7 +2092,7 @@ export default function PresentPage() {
       }
       if (event.key === " ") {
         event.preventDefault();
-        if (progressRef.current >= 1) replay();
+        if (progressRef.current >= finalStop - 0.001) replay();
         else setPlaying((value) => !value);
       }
       if (event.key.toLowerCase() === "f") {
@@ -2100,7 +2105,7 @@ export default function PresentPage() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [advance, replay, retreat]);
+  }, [advance, finalStop, replay, retreat]);
 
   const cnotCount =
     step < 3
@@ -2117,7 +2122,7 @@ export default function PresentPage() {
     step < 2 || (step >= 3 && step < 5) ? 144 : 0;
 
   const parkAodPhases =
-    progress < 0.11 ? 0 : progress < 0.69 ? 1 : 2;
+    progress < 0.34 ? 0 : progress < 0.64 ? 1 : 2;
   const parallelDrops = Math.round(3 * ease((progress * 5 - 3.15) / 1.45));
   const connectivityTarget =
     progress <= 0.001
@@ -2398,7 +2403,7 @@ export default function PresentPage() {
         <button
           className="deck-edge deck-edge-right"
           onClick={advance}
-          disabled={screen === 7 && progress >= 0.999}
+          disabled={screen === 7 && progress >= finalStop - 0.001}
           aria-label="Next state or presentation screen"
         >
           →
@@ -2409,7 +2414,7 @@ export default function PresentPage() {
         <button
           className="present-play"
           onClick={() => {
-            if (progress >= 1) replay();
+            if (progress >= finalStop - 0.001) replay();
             else {
               transitionRef.current = null;
               setPlaying((value) => !value);
@@ -2417,16 +2422,16 @@ export default function PresentPage() {
           }}
         >
           <span className={playing ? "pause-icon" : "play-icon"} />
-          {progress >= 1 ? "Replay" : playing ? "Pause" : "Play"}
+          {progress >= finalStop - 0.001 ? "Replay" : playing ? "Pause" : "Play"}
         </button>
         <div className="present-timeline">
           <input
             type="range"
             min="0"
-            max="1"
+            max={finalStop}
             step="0.001"
             value={progress}
-            style={{ "--timeline-progress": `${progress * 100}%` } as React.CSSProperties}
+            style={{ "--timeline-progress": `${(progress / finalStop) * 100}%` } as React.CSSProperties}
             aria-label="Shift timeline"
             onChange={(event) => {
               transitionRef.current = null;
