@@ -8,6 +8,7 @@ const COLS = 12;
 const ROWS = 6;
 const STOPS = [0, 2, 3, 5, 6];
 const SLIDE_STOPS = [
+  [0],
   [0, 0.28, 1],
   [0, 0.42, 0.68, 1],
   [0, 0.46, 0.7, 1],
@@ -1951,20 +1952,26 @@ export default function PresentPage() {
   const step = progress * TOTAL_STEPS;
   const phase =
     screen === 0
-      ? connectivityPhase(progress)
+      ? {
+          number: "00",
+          label: "Title",
+          description: "Hardware-aware BB-code execution on neutral atoms.",
+        }
       : screen === 1
-        ? classicalBitPhase(progress)
-        : screen === 2
-          ? logicalQubitPhase(progress)
-          : screen === 3
-            ? scalingPhase(progress)
-            : screen === 4
-              ? gateComplexityPhase(progress)
-              : screen === 5
-                ? phaseForStep(step)
-                : screen === 6
-                  ? parkPhase(progress)
-                  : parallelPhase(progress);
+        ? connectivityPhase(progress)
+      : screen === 2
+          ? classicalBitPhase(progress)
+        : screen === 3
+            ? logicalQubitPhase(progress)
+          : screen === 4
+              ? scalingPhase(progress)
+            : screen === 5
+                ? gateComplexityPhase(progress)
+              : screen === 6
+                  ? phaseForStep(step)
+                  : screen === 7
+                    ? parkPhase(progress)
+                    : parallelPhase(progress);
 
   const setBoundedProgress = useCallback((next: number) => {
     const bounded = clamp(next);
@@ -1997,21 +2004,21 @@ export default function PresentPage() {
         }
       }
       if (canvasRef.current) {
-        if (screen === 0) {
+        if (screen === 1) {
           drawConnectivityIntro(canvasRef.current, progressRef.current);
-        } else if (screen === 1) {
-          drawClassicalBitIntro(canvasRef.current, progressRef.current);
         } else if (screen === 2) {
-          drawLogicalQubitIntro(canvasRef.current, progressRef.current);
+          drawClassicalBitIntro(canvasRef.current, progressRef.current);
         } else if (screen === 3) {
-          drawScalingComparison(canvasRef.current, progressRef.current);
+          drawLogicalQubitIntro(canvasRef.current, progressRef.current);
         } else if (screen === 4) {
-          drawGateComplexity(canvasRef.current, progressRef.current);
+          drawScalingComparison(canvasRef.current, progressRef.current);
         } else if (screen === 5) {
-          drawShift(canvasRef.current, progressRef.current * TOTAL_STEPS);
+          drawGateComplexity(canvasRef.current, progressRef.current);
         } else if (screen === 6) {
+          drawShift(canvasRef.current, progressRef.current * TOTAL_STEPS);
+        } else if (screen === 7) {
           drawAodShift(canvasRef.current, progressRef.current);
-        } else {
+        } else if (screen === 8) {
           drawParallelAod(canvasRef.current, progressRef.current);
         }
       }
@@ -2032,7 +2039,7 @@ export default function PresentPage() {
 
   const changeScreen = useCallback(
     (nextScreen: number, initialProgress = 0) => {
-      const bounded = Math.max(0, Math.min(7, nextScreen));
+      const bounded = Math.max(0, Math.min(8, nextScreen));
       if (bounded === screen) return;
       transitionRef.current = null;
       setScreen(bounded);
@@ -2056,7 +2063,7 @@ export default function PresentPage() {
     const nextStop = slideStops.find((stop) => stop > current + 0.012);
     if (nextStop !== undefined) {
       animateTo(nextStop);
-    } else if (screen < 7) {
+    } else if (screen < 8) {
       changeScreen(screen + 1, 0);
     }
   }, [animateTo, changeScreen, screen, slideStops]);
@@ -2085,6 +2092,7 @@ export default function PresentPage() {
       }
       if (event.key === " ") {
         event.preventDefault();
+        if (screen === 0) return;
         if (progressRef.current >= finalStop - 0.001) replay();
         else setPlaying((value) => !value);
       }
@@ -2098,7 +2106,7 @@ export default function PresentPage() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [advance, finalStop, replay, retreat]);
+  }, [advance, finalStop, replay, retreat, screen]);
 
   const cnotCount =
     step < 3
@@ -2129,6 +2137,16 @@ export default function PresentPage() {
       : 3;
 
   const titles = [
+    {
+      kicker: "Rice University · Park ’n Ride",
+      title: "Hardware-Aware Compilation and Execution of Bivariate Bicycle Codes on Neutral-Atom Systems",
+      primaryLabel: "",
+      primaryValue: "",
+      primaryNote: "",
+      costs: [],
+      timeline: [],
+      note: "",
+    },
     {
       kicker: "Hardware connectivity · the architectural divide",
       title: "Fixed couplers or interactions that move?",
@@ -2252,9 +2270,9 @@ export default function PresentPage() {
   ] as const;
   const current = titles[screen];
   const legends =
-    screen <= 4
+    screen <= 5
       ? []
-      : screen === 5
+      : screen === 6
       ? [
           ["legend-circle l", "L data"],
           ["legend-circle r", "R data"],
@@ -2268,12 +2286,12 @@ export default function PresentPage() {
           ["legend-circle r", "R atom"],
           ["aod-line", "moving AOD traps"],
           ["slm-box", "SLM lattice"],
-          ["state-dot", screen === 6 ? "captured wrap strip" : "module motion"],
+          ["state-dot", screen === 7 ? "captured wrap strip" : "module motion"],
         ];
 
   return (
-    <main className={`present-shell screen-${screen}`}>
-      <header className="present-header">
+    <main className={`present-shell screen-${screen}${screen === 0 ? " is-title-screen" : ""}`}>
+      {screen > 0 && <header className="present-header">
         <div className="present-title">
           <a href="/" aria-label="Return to full explainer">
             <span className="brand-mark" />
@@ -2284,7 +2302,7 @@ export default function PresentPage() {
           </div>
         </div>
         <nav className="deck-tabs" aria-label="Presentation screens">
-          {["Connectivity", "Classical bits", "Logical qubits", "Why qLDPC", "Gate tradeoff", "Fixed couplers", "Park ’n Ride", "Parallel column"].map((label, index) => (
+          {["Title", "Connectivity", "Classical bits", "Logical qubits", "Why qLDPC", "Gate tradeoff", "Fixed couplers", "Park ’n Ride", "Parallel column"].map((label, index) => (
             <button
               key={label}
               className={screen === index ? "is-active" : ""}
@@ -2303,30 +2321,60 @@ export default function PresentPage() {
             <small>{phase.description}</small>
           </div>
         </div>
-      </header>
+      </header>}
 
       <section className="present-stage">
-        <canvas
+        {screen === 0 ? (
+          <section className="title-slide" aria-labelledby="presentation-title">
+            <div className="title-slide-logo">
+              <img
+                src={`${import.meta.env.BASE_URL}presenters/rice-university.svg`}
+                alt="Rice University"
+              />
+            </div>
+            <p className="title-slide-kicker">Park ’n Ride · Bivariate bicycle codes</p>
+            <h1 id="presentation-title">
+              <em>Hardware-Aware Compilation and Execution of Bivariate Bicycle Codes on Neutral-Atom Systems</em>
+            </h1>
+            <div className="title-rule" aria-hidden="true" />
+            <div className="author-row" aria-label="Authors">
+              {[
+                ["Jason Ludmir", "jason-ludmir.jpg", "lead-author"],
+                ["Aditya Ranjan", "aditya-ranjan.jpg", ""],
+                ["Nicholas S. DiBrita", "nicholas-dibrita.jpeg", ""],
+                ["Jason Han", "jason-han.jpeg", ""],
+                ["Dr. Tirthak Patel", "tirthak-patel.png", ""],
+              ].map(([name, image, className]) => (
+                <article className={`author-card ${className}`} key={name}>
+                  <div className="author-portrait">
+                    <img src={`${import.meta.env.BASE_URL}presenters/${image}`} alt={name} />
+                  </div>
+                  <h2>{name}</h2>
+                </article>
+              ))}
+            </div>
+          </section>
+        ) : <canvas
           ref={canvasRef}
           className="present-canvas"
           aria-label={
-            screen === 0
+            screen === 1
               ? "Animated comparison of fixed superconducting connectivity and mobile neutral-atom connectivity"
-              : screen === 1
+              : screen === 2
                 ? "Animated classical bit flip and seven-bit majority-vote repetition code"
-                : screen === 2
+                : screen === 3
                   ? "Animated introduction to physical errors and logical qubit encoding with a color code"
-                  : screen === 3
+                  : screen === 4
                     ? "Animated comparison of surface, color, and bivariate bicycle code scaling"
-                    : screen === 4
+                    : screen === 5
                       ? "Animated comparison of transversal CSS gates and BB logical-control complexity"
-                      : screen === 5
+                      : screen === 6
                         ? "Animated fixed-coupler shift automorphism"
-                        : screen === 6
+                        : screen === 7
                           ? "Animated Park-n-Ride AOD shift automorphism"
                           : "Three Park-n-Ride modules shifting in parallel"
           }
-        />
+        />}
         {legends.length > 0 && (
           <div className="present-legend" aria-hidden="true">
             {legends.map(([className, label]) => (
@@ -2334,34 +2382,34 @@ export default function PresentPage() {
             ))}
           </div>
         )}
-        {!(screen === 1 && progress < 0.43) && <div className="present-shift">
+        {screen > 0 && !(screen === 2 && progress < 0.43) && <div className="present-shift">
           <span>
-            {screen === 0
+            {screen === 1
               ? "physical layout ↔ connectivity graph"
-              : screen === 1
+              : screen === 2
                 ? "one classical value"
-                : screen === 2
+                : screen === 3
                   ? "one quantum state"
-                  : screen === 3
+                  : screen === 4
                     ? "topological patches vs qLDPC block"
-                    : screen === 4
+                    : screen === 5
                       ? "logical entangling gate"
-                      : screen === 7
+                      : screen === 8
                         ? "shared physical directions"
                         : "global permutation"}
           </span>
           <strong>
-            {screen === 0
+            {screen === 1
               ? "fixed edges ↔ moving edges"
-              : screen === 1
+              : screen === 2
                 ? "1 → 1111111"
-                : screen === 2
+                : screen === 3
                   ? "|ψ⟩ → |ψ⟩ₗ"
-                  : screen === 3
+                  : screen === 4
                     ? "1 logical ↔ 12 logical"
-                    : screen === 4
+                    : screen === 5
                       ? "direct layer ↔ control stack"
-                      : screen === 7
+                      : screen === 8
                         ? "+x · +y"
                         : "+3x · −1y"}
           </strong>
@@ -2377,14 +2425,31 @@ export default function PresentPage() {
         <button
           className="deck-edge deck-edge-right"
           onClick={advance}
-          disabled={screen === 7 && progress >= finalStop - 0.001}
+          disabled={screen === 8 && progress >= finalStop - 0.001}
           aria-label="Next state or presentation screen"
         >
           →
         </button>
       </section>
 
-      <footer className="present-controls">
+      {screen === 0 ? (
+        <footer className="title-controls">
+          <span className="title-controls-rule" aria-hidden="true" />
+          <p><kbd>→</kbd> Begin presentation</p>
+          <button
+            className="fullscreen-button"
+            onClick={() => {
+              if (!document.fullscreenElement) {
+                void document.documentElement.requestFullscreen();
+              } else {
+                void document.exitFullscreen();
+              }
+            }}
+          >
+            Fullscreen <kbd>F</kbd>
+          </button>
+        </footer>
+      ) : <footer className="present-controls">
         <button
           className="present-play"
           onClick={() => {
@@ -2429,7 +2494,7 @@ export default function PresentPage() {
         >
           Fullscreen <kbd>F</kbd>
         </button>
-      </footer>
+      </footer>}
     </main>
   );
 }
