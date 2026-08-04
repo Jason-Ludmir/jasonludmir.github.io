@@ -29,6 +29,174 @@ const mixPoint = (a: Point, b: Point, t: number): Point => ({
   y: mix(a.y, b.y, t),
 });
 
+function classicalBitPhase(progress: number) {
+  if (progress < 0.23) {
+    return {
+      number: "01",
+      label: "Store one classical bit",
+      description: "The intended value is written into a single physical device.",
+    };
+  }
+  if (progress < 0.46) {
+    return {
+      number: "02",
+      label: "One fault flips the answer",
+      description: "With only one copy, the receiver cannot tell that 1 became 0.",
+    };
+  }
+  if (progress < 0.72) {
+    return {
+      number: "03",
+      label: "Add classical redundancy",
+      description: "The intended value is repeated across seven independently stored bits.",
+    };
+  }
+  return {
+    number: "04",
+    label: "Let the majority decide",
+    description: "Six correct copies outvote the single flipped bit and recover the original value.",
+  };
+}
+
+function drawClassicalBitIntro(canvas: HTMLCanvasElement, progress: number) {
+  const rect = canvas.getBoundingClientRect();
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const pixelWidth = Math.max(1, Math.round(rect.width * dpr));
+  const pixelHeight = Math.max(1, Math.round(rect.height * dpr));
+  if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
+    canvas.width = pixelWidth;
+    canvas.height = pixelHeight;
+  }
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const width = rect.width;
+  const height = rect.height;
+  ctx.clearRect(0, 0, width, height);
+
+  const inset = clamp(width * 0.06, 56, 92);
+  const gap = clamp(width * 0.025, 24, 40);
+  const panelY = 14;
+  const panelH = height - 28;
+  const panelW = (width - inset * 2 - gap) / 2;
+  const flip = ease((progress - 0.2) / 0.22);
+  const repeat = ease((progress - 0.43) / 0.25);
+  const vote = ease((progress - 0.7) / 0.23);
+  const pulse = 0.65 + 0.35 * Math.sin(performance.now() / 220);
+
+  const roundRect = (x: number, y: number, w: number, h: number, r = 14) => {
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h, r);
+  };
+  const panel = (x: number, accent: string) => {
+    ctx.save();
+    roundRect(x, panelY, panelW, panelH);
+    ctx.fillStyle = "rgba(8, 21, 32, .72)";
+    ctx.fill();
+    ctx.globalAlpha = 0.22;
+    ctx.strokeStyle = accent;
+    ctx.stroke();
+    ctx.restore();
+  };
+  const mono = (text: string, x: number, y: number, size = 9, color = "rgba(190,211,225,.72)", align: CanvasTextAlign = "left") => {
+    ctx.save();
+    ctx.textAlign = align;
+    ctx.fillStyle = color;
+    ctx.font = `600 ${size}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+    ctx.fillText(text, x, y);
+    ctx.restore();
+  };
+  const drawArrow = (x1: number, y1: number, x2: number, y2: number, color: string, alpha = 1) => {
+    ctx.save(); ctx.globalAlpha = alpha;
+    ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 1.8;
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x2, y2); ctx.lineTo(x2 - 8, y2 - 5); ctx.lineTo(x2 - 8, y2 + 5); ctx.closePath(); ctx.fill();
+    ctx.restore();
+  };
+  const bitCell = (cx: number, cy: number, value: string, accent: string, alpha = 1, error = false, size = 64) => {
+    ctx.save(); ctx.globalAlpha = alpha;
+    roundRect(cx - size / 2, cy - size / 2, size, size, 12);
+    ctx.fillStyle = error ? "rgba(91,39,32,.9)" : "rgba(15,38,51,.92)"; ctx.fill();
+    ctx.strokeStyle = accent; ctx.lineWidth = error ? 2.2 : 1.2; ctx.stroke();
+    ctx.fillStyle = error ? colors.amber : "#e4f2f9";
+    ctx.textAlign = "center";
+    ctx.font = `500 ${size * 0.58}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+    ctx.fillText(value, cx, cy + size * 0.2);
+    ctx.restore();
+  };
+
+  panel(inset, colors.pink);
+  panel(inset + panelW + gap, colors.green);
+
+  const leftX = inset;
+  mono("ONE PHYSICAL BIT", leftX + 18, panelY + 24, 10, colors.pink);
+  mono("NO REDUNDANCY", leftX + 18, panelY + 39, 7, "rgba(137,161,181,.58)");
+  const leftY = panelY + panelH * 0.48;
+  const sourceX = leftX + panelW * 0.25;
+  const targetX = leftX + panelW * 0.75;
+  bitCell(sourceX, leftY, "1", colors.cyan, 1, false, clamp(panelH * 0.25, 76, 118));
+  mono("INTENDED", sourceX, leftY - clamp(panelH * 0.16, 54, 78), 7, colors.cyan, "center");
+  drawArrow(sourceX + 64, leftY, targetX - 64, leftY, flip > 0.05 ? colors.amber : "rgba(109,243,255,.48)");
+
+  ctx.save(); ctx.globalAlpha = flip;
+  const boltX = (sourceX + targetX) / 2;
+  ctx.strokeStyle = colors.amber; ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(boltX - 7, leftY - 31); ctx.lineTo(boltX + 5, leftY - 8);
+  ctx.lineTo(boltX - 3, leftY - 8); ctx.lineTo(boltX + 8, leftY + 22);
+  ctx.stroke();
+  mono("NOISE", boltX, leftY - 42, 7, colors.amber, "center");
+  ctx.restore();
+
+  bitCell(targetX, leftY, flip > 0.5 ? "0" : "1", flip > 0.5 ? colors.amber : colors.cyan, 1, flip > 0.5, clamp(panelH * 0.25, 76, 118));
+  mono(flip > 0.5 ? "WRONG" : "READ", targetX, leftY - clamp(panelH * 0.16, 54, 78), 7, flip > 0.5 ? colors.amber : colors.cyan, "center");
+  mono("ONE FLIP → THE STORED ANSWER IS LOST", leftX + panelW / 2, panelY + panelH - 26, 8, colors.amber, "center");
+
+  const rightX = inset + panelW + gap;
+  mono("7-BIT REPETITION CODE", rightX + 18, panelY + 24, 10, colors.green);
+  mono("CLASSICAL REDUNDANCY + MAJORITY VOTE", rightX + 18, panelY + 39, 7, "rgba(137,161,181,.58)");
+
+  const cellsY = panelY + panelH * 0.38;
+  const cellSize = clamp(panelW * 0.083, 35, 52);
+  const cellGap = clamp(panelW * 0.025, 9, 16);
+  const totalW = cellSize * 7 + cellGap * 6;
+  const cellsX = rightX + (panelW - totalW) / 2 + cellSize / 2;
+  for (let i = 0; i < 7; i++) {
+    const local = ease(repeat * 1.42 - i * 0.07);
+    const isFault = i === 3 && flip > 0.65 && vote < 0.88;
+    bitCell(cellsX + i * (cellSize + cellGap), cellsY, isFault ? "0" : "1", isFault ? colors.amber : colors.green, local, isFault, cellSize);
+    mono(`b${i + 1}`, cellsX + i * (cellSize + cellGap), cellsY + cellSize * 0.75, 5.8, "rgba(137,161,181,.55)", "center");
+  }
+
+  ctx.save(); ctx.globalAlpha = vote;
+  const tallyY = panelY + panelH * 0.62;
+  roundRect(rightX + panelW * 0.12, tallyY, panelW * 0.76, 64, 11);
+  ctx.fillStyle = "rgba(13,36,42,.88)"; ctx.fill();
+  ctx.strokeStyle = "rgba(50,214,173,.3)"; ctx.stroke();
+  mono("COUNT THE COPIES", rightX + panelW * 0.16, tallyY + 18, 7, "rgba(151,176,187,.68)");
+  mono("1", rightX + panelW * 0.31, tallyY + 46, 19, colors.green, "center");
+  mono("× 6", rightX + panelW * 0.38, tallyY + 44, 9, colors.green);
+  mono("0", rightX + panelW * 0.59, tallyY + 46, 19, colors.amber, "center");
+  mono("× 1", rightX + panelW * 0.66, tallyY + 44, 9, colors.amber);
+  ctx.restore();
+
+  const outputY = panelY + panelH * 0.84;
+  drawArrow(rightX + panelW * 0.35, outputY, rightX + panelW * 0.58, outputY, colors.green, vote);
+  ctx.save(); ctx.globalAlpha = vote;
+  mono("MAJORITY", rightX + panelW * 0.46, outputY - 12, 6.5, colors.green, "center");
+  bitCell(rightX + panelW * 0.68, outputY, "1", colors.green, 1, false, cellSize * 1.12);
+  mono("RECOVERED", rightX + panelW * 0.68, outputY + cellSize * 0.88, 7, colors.green, "center");
+  ctx.restore();
+
+  ctx.save(); ctx.globalAlpha = vote;
+  const marginY = panelY + panelH * 0.19;
+  roundRect(rightX + panelW * 0.79, marginY - 17, panelW * 0.16, 34, 17);
+  ctx.fillStyle = `rgba(50,214,173,${0.08 + pulse * 0.08})`; ctx.fill();
+  ctx.strokeStyle = "rgba(50,214,173,.42)"; ctx.stroke();
+  mono("6 > 1", rightX + panelW * 0.87, marginY + 3, 8, colors.green, "center");
+  ctx.restore();
+}
+
 function logicalQubitPhase(progress: number) {
   if (progress < 0.24) {
     return {
@@ -1571,16 +1739,18 @@ export default function PresentPage() {
   const step = progress * TOTAL_STEPS;
   const phase =
     screen === 0
-      ? logicalQubitPhase(progress)
+      ? classicalBitPhase(progress)
       : screen === 1
-        ? scalingPhase(progress)
+        ? logicalQubitPhase(progress)
         : screen === 2
-          ? gateComplexityPhase(progress)
+          ? scalingPhase(progress)
           : screen === 3
-            ? phaseForStep(step)
+            ? gateComplexityPhase(progress)
             : screen === 4
-              ? parkPhase(progress)
-              : parallelPhase(progress);
+              ? phaseForStep(step)
+              : screen === 5
+                ? parkPhase(progress)
+                : parallelPhase(progress);
 
   const setBoundedProgress = useCallback((next: number) => {
     const bounded = clamp(next);
@@ -1608,14 +1778,16 @@ export default function PresentPage() {
       }
       if (canvasRef.current) {
         if (screen === 0) {
-          drawLogicalQubitIntro(canvasRef.current, progressRef.current);
+          drawClassicalBitIntro(canvasRef.current, progressRef.current);
         } else if (screen === 1) {
-          drawScalingComparison(canvasRef.current, progressRef.current);
+          drawLogicalQubitIntro(canvasRef.current, progressRef.current);
         } else if (screen === 2) {
-          drawGateComplexity(canvasRef.current, progressRef.current);
+          drawScalingComparison(canvasRef.current, progressRef.current);
         } else if (screen === 3) {
-          drawShift(canvasRef.current, progressRef.current * TOTAL_STEPS);
+          drawGateComplexity(canvasRef.current, progressRef.current);
         } else if (screen === 4) {
+          drawShift(canvasRef.current, progressRef.current * TOTAL_STEPS);
+        } else if (screen === 5) {
           drawAodShift(canvasRef.current, progressRef.current);
         } else {
           drawParallelAod(canvasRef.current, progressRef.current);
@@ -1637,7 +1809,7 @@ export default function PresentPage() {
 
   const changeScreen = useCallback(
     (nextScreen: number) => {
-      const bounded = Math.max(0, Math.min(5, nextScreen));
+      const bounded = Math.max(0, Math.min(6, nextScreen));
       if (bounded === screen) return;
       setScreen(bounded);
       setBoundedProgress(0);
@@ -1692,6 +1864,21 @@ export default function PresentPage() {
   const parallelDrops = Math.round(3 * ease((progress * 5 - 3.15) / 1.45));
 
   const titles = [
+    {
+      kicker: "Classical error correction · the intuition",
+      title: "One bad bit should not decide the answer.",
+      primaryLabel: "Stored copies",
+      primaryValue: "1 → 7",
+      primaryNote: "add redundancy before transmission",
+      costs: [
+        ["Original value", "1", "the intended bit"],
+        ["Flipped copies", "1", "/ 7 stored bits"],
+        ["Majority result", "1", "six votes to one"],
+        ["Recovered correctly", "yes", "without trusting one bit"],
+      ],
+      timeline: ["Store one bit", "Bit flip", "Repeat ×7", "Majority vote"],
+      note: "Classical repetition-code intuition · seven copies can tolerate one flipped bit with a wide voting margin",
+    },
     {
       kicker: "Quantum error correction · the core idea",
       title: "From a fragile qubit to a logical qubit.",
@@ -1785,9 +1972,9 @@ export default function PresentPage() {
   ] as const;
   const current = titles[screen];
   const legends =
-    screen <= 2
+    screen <= 3
       ? []
-      : screen === 3
+      : screen === 4
       ? [
           ["legend-circle l", "L data"],
           ["legend-circle r", "R data"],
@@ -1801,7 +1988,7 @@ export default function PresentPage() {
           ["legend-circle r", "R atom"],
           ["aod-line", "moving AOD traps"],
           ["slm-box", "SLM lattice"],
-          ["state-dot", screen === 4 ? "captured wrap strip" : "module motion"],
+          ["state-dot", screen === 5 ? "captured wrap strip" : "module motion"],
         ];
 
   return (
@@ -1817,7 +2004,7 @@ export default function PresentPage() {
           </div>
         </div>
         <nav className="deck-tabs" aria-label="Presentation screens">
-          {["Logical qubits", "Why qLDPC", "Gate tradeoff", "Fixed couplers", "Park ’n Ride", "Parallel column"].map((label, index) => (
+          {["Classical bits", "Logical qubits", "Why qLDPC", "Gate tradeoff", "Fixed couplers", "Park ’n Ride", "Parallel column"].map((label, index) => (
             <button
               key={label}
               className={screen === index ? "is-active" : ""}
@@ -1859,16 +2046,18 @@ export default function PresentPage() {
           className="present-canvas"
           aria-label={
             screen === 0
-              ? "Animated introduction to physical errors and logical qubit encoding with a color code"
+              ? "Animated classical bit flip and seven-bit majority-vote repetition code"
               : screen === 1
-                ? "Animated comparison of surface, color, and bivariate bicycle code scaling"
+                ? "Animated introduction to physical errors and logical qubit encoding with a color code"
                 : screen === 2
-                  ? "Animated comparison of transversal CSS gates and BB logical-control complexity"
+                  ? "Animated comparison of surface, color, and bivariate bicycle code scaling"
                   : screen === 3
-                    ? "Animated fixed-coupler shift automorphism"
+                    ? "Animated comparison of transversal CSS gates and BB logical-control complexity"
                     : screen === 4
-                      ? "Animated Park-n-Ride AOD shift automorphism"
-                      : "Three Park-n-Ride modules shifting in parallel"
+                      ? "Animated fixed-coupler shift automorphism"
+                      : screen === 5
+                        ? "Animated Park-n-Ride AOD shift automorphism"
+                        : "Three Park-n-Ride modules shifting in parallel"
           }
         />
         {legends.length > 0 && (
@@ -1881,25 +2070,29 @@ export default function PresentPage() {
         <div className="present-shift">
           <span>
             {screen === 0
-              ? "one quantum state"
+              ? "one classical value"
               : screen === 1
-                ? "topological patches vs qLDPC block"
+                ? "one quantum state"
                 : screen === 2
-                  ? "logical entangling gate"
-                  : screen === 5
-                    ? "shared physical directions"
-                    : "global permutation"}
+                  ? "topological patches vs qLDPC block"
+                  : screen === 3
+                    ? "logical entangling gate"
+                    : screen === 6
+                      ? "shared physical directions"
+                      : "global permutation"}
           </span>
           <strong>
             {screen === 0
-              ? "|ψ⟩ → |ψ⟩ₗ"
+              ? "1 → 1111111"
               : screen === 1
-                ? "1 logical ↔ 12 logical"
+                ? "|ψ⟩ → |ψ⟩ₗ"
                 : screen === 2
-                  ? "direct layer ↔ control stack"
-                  : screen === 5
-                    ? "+x · +y"
-                    : "+3x · −1y"}
+                  ? "1 logical ↔ 12 logical"
+                  : screen === 3
+                    ? "direct layer ↔ control stack"
+                    : screen === 6
+                      ? "+x · +y"
+                      : "+3x · −1y"}
           </strong>
         </div>
         <button
@@ -1913,7 +2106,7 @@ export default function PresentPage() {
         <button
           className="deck-edge deck-edge-right"
           onClick={() => changeScreen(screen + 1)}
-          disabled={screen === 5}
+          disabled={screen === 6}
           aria-label="Next presentation screen"
         >
           →
