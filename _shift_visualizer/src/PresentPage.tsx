@@ -3535,7 +3535,7 @@ export default function PresentPage() {
               onClick={() => changeScreen(index)}
               aria-current={screen === index ? "page" : undefined}
             >
-              <span>0{index + 1}</span>
+              <span>{String(index + 1).padStart(2, "0")}</span>
               {label}
             </button>
           ))}
