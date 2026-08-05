@@ -671,11 +671,6 @@ function drawLogicalQubitIntro(canvas: HTMLCanvasElement, progress: number) {
     ctx.restore();
   });
 
-  ctx.save(); ctx.globalAlpha = encodeReveal;
-  const bridgeY = panelY + panelH * 0.22;
-  arrow({ x: leftX + panelW + 7, y: bridgeY }, { x: rightX - 7, y: bridgeY }, colors.green, 0.7, 1.5);
-  mono("ENCODE", leftX + panelW + gap / 2, bridgeY - 10, 6.5, colors.green, "center");
-  ctx.restore();
 }
 
 function scalingPhase(progress: number) {
@@ -1285,27 +1280,29 @@ function drawGateComplexity(canvas: HTMLCanvasElement, progress: number) {
   const flowX2 = rightModule.x - 22;
   const flowW = flowX2 - flowX1;
   const cards = [
-    ["01", "REWRITE", "CNOT → Pauli pattern"],
-    ["02", "ADDRESS", "shift to native support"],
-    ["03", "SURGERY", "LPU + adapter checks"],
-    ["04", "CORRECT", "decode + feed-forward"],
+    ["01", "REWRITE", "CNOT → Pauli pattern", "turn gate into checks"],
+    ["02", "ADDRESS", "shift to native support", "bring targets together"],
+    ["03", "SURGERY", "LPU + adapter checks", "measure both blocks"],
+    ["04", "CORRECT", "decode + feed-forward", "apply known correction"],
   ];
   const cardGap = 7;
   const cardW = (flowW - cardGap * 3) / 4;
-  const cardY = moduleY - 28;
-  cards.forEach(([num, title, detail], i) => {
+  const cardH = 72;
+  const cardY = moduleY - cardH / 2;
+  cards.forEach(([num, title, detail, blurb], i) => {
     const local = ease((compile * 1.28 - i * 0.09));
     const x = flowX1 + i * (cardW + cardGap);
     ctx.save(); ctx.globalAlpha = local;
-    roundRect(x, cardY, cardW, 56, 9);
+    roundRect(x, cardY, cardW, cardH, 9);
     ctx.fillStyle = "rgba(17,35,44,.92)"; ctx.fill();
     ctx.strokeStyle = i === 2 ? "rgba(50,214,173,.48)" : "rgba(133,161,181,.2)"; ctx.stroke();
     mono(num, x + 9, cardY + 14, 6.5, i === 2 ? colors.green : "rgba(109,243,255,.55)");
     mono(title, x + 9, cardY + 29, 7.5, "rgba(229,241,249,.88)");
     mono(detail, x + 9, cardY + 43, 5.8, canvasText.muted);
+    mono(blurb, x + 9, cardY + 59, 5, "rgba(229,240,248,.92)");
     if (i < cards.length - 1) {
       ctx.strokeStyle = "rgba(109,243,255,.35)";
-      ctx.beginPath(); ctx.moveTo(x + cardW, cardY + 28); ctx.lineTo(x + cardW + cardGap, cardY + 28); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x + cardW, cardY + cardH / 2); ctx.lineTo(x + cardW + cardGap, cardY + cardH / 2); ctx.stroke();
     }
     ctx.restore();
   });
@@ -2525,15 +2522,17 @@ function drawPlacementOrdering(canvas: HTMLCanvasElement, progress: number) {
   }
 
   const metricY = panelY + panelH - metricsH - 14;
-  const metricGap = 9;
-  const metricW = (leftW - 40 - metricGap * 2) / 3;
+  const metricW = clamp(columnW * 0.86, 150, 230);
+  const metricCenters = [
+    leftX + columnW + columnGap / 2,
+    leftX + columnW * 2 + columnGap * 1.5,
+  ];
   const metrics = [
     ["AVG PARTNER TRAVEL", mix(550.59, 361.91, spectralT), "", "34% LOWER"],
     ["BRIDGE ROUNDS / LAYER", mix(14.62, 8.02, spectralT), "", "45% FEWER"],
-    ["BRIDGE MICRO-STEPS", mix(1491.3, 810.0, spectralT), "", "46% FEWER"],
   ] as const;
   metrics.forEach(([label, value, suffix, improvement], index) => {
-    const x = leftX + 20 + index * (metricW + metricGap);
+    const x = metricCenters[index] - metricW / 2;
     ctx.save();
     roundRect(x, metricY, metricW, metricsH, 10);
     ctx.fillStyle = spectralT > 0.4 ? "rgba(50,214,173,.055)" : "rgba(255,189,102,.045)";
@@ -3360,7 +3359,7 @@ export default function PresentPage() {
     },
     {
       kicker: "Encoding overhead",
-      title: "Why qLDPC changes the scaling",
+      title: "Code Error Scaling",
       primaryLabel: "Logical qubits per BB block",
       primaryValue: "12",
       primaryNote: "gross and two-gross",
@@ -3375,7 +3374,7 @@ export default function PresentPage() {
     },
     {
       kicker: "Logical gates",
-      title: "Fewer qubits. Harder logical control",
+      title: "More corrections. Harder logical control.",
       primaryLabel: "Direct physical gate layers",
       primaryValue: progress < 0.58 ? "1" : "→ protocol",
       primaryNote: "bitwise CSS → BB instruction stack",
@@ -3442,7 +3441,6 @@ export default function PresentPage() {
       costs: [
         ["Partner travel", "−34%", "at 113 modules vs. greedy"],
         ["Bridge rounds", "−45%", "per logical layer"],
-        ["Bridge micro-steps", "−46%", "motion-time proxy"],
         ["Runtime rank", "#1", "all sizes + capacities"],
       ],
       timeline: ["Arbitrary order", "Move conflicts", "Spectral order", "Measured results"],
