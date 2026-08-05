@@ -12,7 +12,7 @@ const SLIDE_STOPS = [
   [0, 0.28, 1],
   [0, 0.42, 0.68, 1],
   [0, 0.46, 0.7, 1],
-  [0, 0.6, 0.72, 0.82, 0.92],
+  [0, 0.42, 0.68, 1],
   [0, 0.22, 0.42, 0.62, 0.94],
   [0, 2 / 6, 3 / 6, 5 / 6, 1],
   [0, 0.34, 0.64, 0.92],
@@ -665,23 +665,28 @@ function scalingPhase(progress: number) {
   if (progress <= 0.001) {
     return {
       number: "01",
-      label: "Start with the small codes",
-      description: "Distance-3 surface and color patches sit above the gross BB code.",
+      label: "Start with the topological codes",
+      description: "Distance-3 surface and color-code patches establish the conventional baseline.",
     };
   }
-  if (progress <= 0.601) {
+  if (progress <= 0.421) {
     return {
       number: "02",
-      label: "Increase error distance",
-      description: "Distance-7 patches and the distance-18 two-gross block enter completely at right.",
+      label: "Scale both topological codes",
+      description: "The surface and color-code rows advance to distance 7 together.",
+    };
+  }
+  if (progress <= 0.681) {
+    return {
+      number: "03",
+      label: "Introduce the gross BB block",
+      description: "Only after the topological comparison is complete does the BB-code row appear.",
     };
   }
   return {
-    number: "03",
-    label: progress < 0.919 ? "Reveal the scaling laws" : "Compare the overhead",
-    description: progress < 0.919
-      ? "Each row resolves into its complete physical-qubit scaling law."
-      : "Two-dimensional topological patches grow quadratically with distance.",
+    number: "04",
+    label: "Scale the BB code",
+    description: "Gross advances to two-gross, revealing linear physical-qubit scaling with distance.",
   };
 }
 
@@ -708,16 +713,21 @@ function drawScalingComparison(canvas: HTMLCanvasElement, progress: number) {
   const gap = Math.max(5, height * 0.012);
   const rowHeight = (height - top * 2 - gap * 2) / 3;
   const contentWidth = width - left - right;
-  const startX = left + contentWidth * 0.17;
-  const targetX = left + contentWidth * 0.52;
+  const visualShiftX = clamp(width * 0.025, 24, 44);
+  const startX = left + contentWidth * 0.17 + visualShiftX;
+  const targetX = left + contentWidth * 0.52 + visualShiftX;
   const formulaX = left + contentWidth * 0.78;
-  const reveal = ease((progress - 0.2) / 0.4);
-  const slide = (1 - reveal) * Math.min(56, contentWidth * 0.07);
+  const topologicalReveal = ease(progress / 0.42);
+  const bbReveal = ease((progress - 0.42) / 0.26);
+  const bbScaleReveal = ease((progress - 0.68) / 0.32);
+  const topologicalSlide = (1 - topologicalReveal) * Math.min(56, contentWidth * 0.07);
+  const bbSlide = (1 - bbScaleReveal) * Math.min(56, contentWidth * 0.07);
   const pulse = 0.7 + 0.3 * Math.sin(performance.now() / 260);
 
-  const label = (name: string, detail: string, row: number, accent: string) => {
+  const label = (name: string, detail: string, row: number, accent: string, alpha = 1) => {
     const y = top + row * (rowHeight + gap) + rowHeight / 2;
     ctx.save();
+    ctx.globalAlpha = alpha;
     ctx.fillStyle = accent;
     ctx.font = `600 ${slideTextSize(12)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
     ctx.fillText(name.toUpperCase(), 28, y - 10);
@@ -740,11 +750,11 @@ function drawScalingComparison(canvas: HTMLCanvasElement, progress: number) {
     ctx.restore();
   };
 
-  const transitionArrow = (y: number) => {
+  const transitionArrow = (y: number, alpha: number) => {
     const x1 = startX + Math.min(72, contentWidth * 0.085);
     const x2 = targetX - Math.min(78, contentWidth * 0.09);
     ctx.save();
-    ctx.globalAlpha = reveal;
+    ctx.globalAlpha = alpha;
     ctx.strokeStyle = `rgba(109, 243, 255, ${0.24 + pulse * 0.18})`;
     ctx.fillStyle = colors.cyan;
     ctx.lineWidth = 1;
@@ -938,23 +948,41 @@ function drawScalingComparison(canvas: HTMLCanvasElement, progress: number) {
         ctx.fillRect(x + cellW * 0.68 - radius, y + cellH * 0.7 - radius, radius * 1.65, radius * 1.65);
       }
     }
-    ctx.strokeStyle = colors.cyan;
-    ctx.globalAlpha = alpha * 0.58;
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(x0 + patchWidth * 0.35, y0 + patchHeight * 0.76);
-    ctx.lineTo(x0 + patchWidth * 0.53, y0 + patchHeight * 0.22);
-    ctx.lineTo(x0 + patchWidth * 0.73, y0 + patchHeight * 0.6);
-    ctx.stroke();
     ctx.globalAlpha = alpha;
     ctx.strokeStyle = "rgba(215, 233, 244, .58)";
     ctx.lineWidth = 1.1;
     ctx.strokeRect(x0, y0, patchWidth, patchHeight);
-    ctx.fillStyle = "rgba(109, 243, 255, .82)";
-    ctx.font = `600 ${slideTextSize(9)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
-    ctx.textAlign = "center";
-    ctx.fillText("↔", cx, y0 - 3);
-    ctx.fillText("↕", x0 - 6, cy + 3);
+
+    const axisArrow = (a: Point, b: Point, horizontal: boolean) => {
+      const head = 4.5;
+      ctx.strokeStyle = "rgba(109, 243, 255, .88)";
+      ctx.lineWidth = 1.3;
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+      if (horizontal) {
+        ctx.moveTo(a.x, a.y); ctx.lineTo(a.x + head, a.y - head);
+        ctx.moveTo(a.x, a.y); ctx.lineTo(a.x + head, a.y + head);
+        ctx.moveTo(b.x, b.y); ctx.lineTo(b.x - head, b.y - head);
+        ctx.moveTo(b.x, b.y); ctx.lineTo(b.x - head, b.y + head);
+      } else {
+        ctx.moveTo(a.x, a.y); ctx.lineTo(a.x - head, a.y + head);
+        ctx.moveTo(a.x, a.y); ctx.lineTo(a.x + head, a.y + head);
+        ctx.moveTo(b.x, b.y); ctx.lineTo(b.x - head, b.y - head);
+        ctx.moveTo(b.x, b.y); ctx.lineTo(b.x + head, b.y - head);
+      }
+      ctx.stroke();
+    };
+    axisArrow(
+      { x: cx - patchWidth * 0.22, y: y0 - 8 },
+      { x: cx + patchWidth * 0.22, y: y0 - 8 },
+      true,
+    );
+    axisArrow(
+      { x: x0 - 10, y: cy - patchHeight * 0.24 },
+      { x: x0 - 10, y: cy + patchHeight * 0.24 },
+      false,
+    );
     ctx.restore();
   };
 
@@ -963,17 +991,17 @@ function drawScalingComparison(canvas: HTMLCanvasElement, progress: number) {
     formula: string,
     detail: string,
     accent: string,
+    alpha: number,
   ) => {
     const y = top + row * (rowHeight + gap) + rowHeight / 2;
-    const rowFormulaReveal = ease((progress - (0.62 + row * 0.1)) / 0.1);
     ctx.save();
-    ctx.globalAlpha = rowFormulaReveal;
+    ctx.globalAlpha = alpha;
     ctx.fillStyle = "rgba(130, 153, 173, .66)";
     ctx.font = `500 ${slideTextSize(7)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
     ctx.fillText("PHYSICAL-QUBIT SCALING", formulaX, y - 28);
     ctx.fillStyle = accent;
     ctx.shadowColor = accent;
-    ctx.shadowBlur = 12 * rowFormulaReveal;
+    ctx.shadowBlur = 12 * alpha;
     ctx.font = `500 ${clamp(width * 0.018, 18, 30)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
     ctx.fillText(formula, formulaX, y + 7);
     ctx.shadowBlur = 0;
@@ -989,48 +1017,48 @@ function drawScalingComparison(canvas: HTMLCanvasElement, progress: number) {
   label("Surface code", "one logical qubit per patch", 0, colors.blue);
   drawSurfacePatch(startX, surfaceY, 3, clamp(rowHeight * 0.36, 42, 58), 1);
   topologyCaption(startX, surfaceY + rowHeight * 0.34, "d = 3", "n = 9 data qubits");
-  transitionArrow(surfaceY);
-  drawSurfacePatch(targetX + slide, surfaceY, 7, clamp(rowHeight * 0.62, 70, 102), reveal);
-  topologyCaption(targetX + slide, surfaceY + rowHeight * 0.38, "d = 7", "n = 49 data qubits", reveal);
-  scalingFormula(0, "n = Θ(d²)", "per encoded logical qubit", colors.blue);
+  transitionArrow(surfaceY, topologicalReveal);
+  drawSurfacePatch(targetX + topologicalSlide, surfaceY, 7, clamp(rowHeight * 0.62, 70, 102), topologicalReveal);
+  topologyCaption(targetX + topologicalSlide, surfaceY + rowHeight * 0.38, "d = 7", "n = 49 data qubits", topologicalReveal);
+  scalingFormula(0, "n = Θ(d²)", "per encoded logical qubit", colors.blue, topologicalReveal);
 
   const colorY = top + (rowHeight + gap) + rowHeight / 2 - 2;
   label("Color code", "one logical qubit per patch", 1, colors.pink);
   drawColorPatch(startX, colorY, 3, clamp(rowHeight * 0.39, 46, 64), 1);
   topologyCaption(startX, colorY + rowHeight * 0.34, "d = 3", "n = 7 data qubits");
-  transitionArrow(colorY);
-  drawColorPatch(targetX + slide, colorY, 7, clamp(rowHeight * 0.66, 74, 108), reveal);
-  topologyCaption(targetX + slide, colorY + rowHeight * 0.39, "d = 7", "n = 37 data qubits", reveal);
-  scalingFormula(1, "n = Θ(d²)", "per encoded logical qubit", colors.pink);
+  transitionArrow(colorY, topologicalReveal);
+  drawColorPatch(targetX + topologicalSlide, colorY, 7, clamp(rowHeight * 0.66, 74, 108), topologicalReveal);
+  topologyCaption(targetX + topologicalSlide, colorY + rowHeight * 0.39, "d = 7", "n = 37 data qubits", topologicalReveal);
+  scalingFormula(1, "n = Θ(d²)", "per encoded logical qubit", colors.pink, topologicalReveal);
 
   const bbY = top + 2 * (rowHeight + gap) + rowHeight / 2 - 2;
-  label("Bivariate bicycle", "twelve logical qubits per block", 2, colors.green);
+  label("Bivariate bicycle", "twelve logical qubits per block", 2, colors.green, bbReveal);
   drawBicyclePatch(
     startX,
     bbY,
     6,
     clamp(rowHeight * 0.8, 88, 126),
     clamp(rowHeight * 0.38, 42, 58),
-    1,
+    bbReveal,
   );
-  topologyCaption(startX, bbY + rowHeight * 0.35, "gross · [[144,12,12]]", "12 physical qubits / logical");
-  transitionArrow(bbY);
+  topologyCaption(startX, bbY + rowHeight * 0.35, "gross · [[144,12,12]]", "12 physical qubits / logical", bbReveal);
+  transitionArrow(bbY, bbScaleReveal);
   drawBicyclePatch(
-    targetX + slide,
+    targetX + bbSlide,
     bbY,
     12,
     clamp(rowHeight * 0.73, 82, 118),
     clamp(rowHeight * 0.66, 74, 102),
-    reveal,
+    bbScaleReveal,
   );
   topologyCaption(
-    targetX + slide,
+    targetX + bbSlide,
     bbY + rowHeight * 0.4,
     "two-gross · [[288,12,18]]",
     "24 physical qubits / logical",
-    reveal,
+    bbScaleReveal,
   );
-  scalingFormula(2, "k,d = Θ(n)", "asymptotically good qLDPC target", colors.green);
+  scalingFormula(2, "n = Θ(d)", "constant-rate qLDPC family", colors.green, bbScaleReveal);
 }
 
 function gateComplexityPhase(progress: number) {
@@ -3028,10 +3056,10 @@ export default function PresentPage() {
       costs: [
         ["Surface patch", "Θ(d²)", "per logical qubit"],
         ["Color patch", "Θ(d²)", "per logical qubit"],
-        ["Gross → two-gross", progress < 0.24 ? "144" : "144→288", "code qubits"],
+        ["Gross → two-gross", progress < 0.68 ? "144" : "144→288", "code qubits"],
         ["Good qLDPC target", "k,d∝n", "constant rate + linear distance"],
       ],
-      timeline: ["Small codes", "Increase distance", "Reveal scaling", "Compare overhead"],
+      timeline: ["Topological d = 3", "Topological d = 7", "Gross BB", "Two-gross BB"],
       note: "Gross examples are finite BB codes · asymptotic statement applies to good qLDPC families",
     },
     {
