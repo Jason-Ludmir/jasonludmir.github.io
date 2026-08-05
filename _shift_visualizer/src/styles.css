@@ -1321,91 +1321,6 @@ footer p:last-child {
   color: var(--green);
 }
 
-.placement-result-plots {
-  position: absolute;
-  z-index: 2;
-  top: 68px;
-  right: clamp(48px, 4.5vw, 82px);
-  bottom: 28px;
-  left: calc(50.5% + 18px);
-  display: grid;
-  grid-template-rows: minmax(0, 1fr) minmax(0, 0.9fr) auto;
-  gap: 11px;
-  pointer-events: none;
-}
-
-.placement-result-plots figure {
-  min-height: 0;
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  margin: 0;
-  overflow: hidden;
-  border: 1px solid rgba(50, 214, 173, 0.22);
-  border-radius: 10px;
-  background: #fff;
-  box-shadow: 0 16px 38px rgba(0, 7, 14, 0.28);
-  transition: opacity 150ms linear, transform 150ms linear;
-}
-
-.placement-result-plots figure img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  min-height: 0;
-  object-fit: contain;
-  object-position: center;
-  background: #fff;
-}
-
-.placement-plot-label {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 8px 12px;
-  background: #eaf1f4;
-  color: #243746;
-  font-family: var(--font-geist-mono), ui-monospace, monospace;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-}
-
-.placement-plot-label span {
-  padding: 3px 6px;
-  border-radius: 4px;
-  background: #00205b;
-  color: #fff;
-  font-size: 12px;
-}
-
-.placement-takeaway {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 22px;
-  padding: 11px 14px;
-  border: 1px solid rgba(50, 214, 173, 0.34);
-  border-radius: 9px;
-  background: rgba(20, 71, 62, 0.84);
-  box-shadow: 0 12px 28px rgba(0, 9, 15, 0.24);
-  transition: opacity 150ms linear;
-}
-
-.placement-takeaway strong {
-  flex: 0 0 auto;
-  color: #dcfff5;
-  font-size: 18px;
-}
-
-.placement-takeaway span {
-  color: rgba(230, 248, 242, 0.92);
-  font-family: var(--font-geist-mono), ui-monospace, monospace;
-  font-size: 12px;
-  line-height: 1.45;
-  text-align: right;
-}
-
 .conclusion-takeaways {
   position: absolute;
   z-index: 3;
@@ -1918,21 +1833,6 @@ footer p:last-child {
   .title-controls {
     min-height: 58px;
     padding-block: 8px;
-  }
-
-  .placement-result-plots {
-    top: 57px;
-    bottom: 15px;
-    gap: 7px;
-  }
-
-  .placement-plot-label {
-    padding-block: 5px;
-    font-size: 12px;
-  }
-
-  .placement-takeaway {
-    padding-block: 7px;
   }
 
   .conclusion-takeaways article,

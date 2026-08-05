@@ -2331,8 +2331,10 @@ function drawPlacementOrdering(canvas: HTMLCanvasElement, progress: number) {
 
   mono("THE PLACEMENT PROBLEM", leftX + 20, panelY + 29, 10, spectralT > 0.55 ? colors.green : colors.amber);
   mono("SAME BB MODULES · DIFFERENT PHYSICAL ORDER", leftX + 20, panelY + 52, 7, canvasText.muted);
+  const orderingBadgeW = 184;
+  const orderingBadgeX = leftX + leftW - orderingBadgeW - 21;
   ctx.save();
-  roundRect(leftX + leftW - 175, panelY + 17, 154, 31, 8);
+  roundRect(orderingBadgeX, panelY + 17, orderingBadgeW, 31, 16);
   ctx.fillStyle = spectralT > 0.5 ? "rgba(50,214,173,.09)" : "rgba(255,189,102,.08)";
   ctx.fill();
   ctx.strokeStyle = spectralT > 0.5 ? "rgba(50,214,173,.34)" : "rgba(255,189,102,.3)";
@@ -2340,7 +2342,7 @@ function drawPlacementOrdering(canvas: HTMLCanvasElement, progress: number) {
   ctx.restore();
   mono(
     spectralT > 0.5 ? "SPECTRAL ORDERING" : "ARBITRARY ORDERING",
-    leftX + leftW - 98,
+    orderingBadgeX + orderingBadgeW / 2,
     panelY + 37,
     7.2,
     spectralT > 0.5 ? colors.green : colors.amber,
@@ -2359,30 +2361,98 @@ function drawPlacementOrdering(canvas: HTMLCanvasElement, progress: number) {
     mono(`COMPUTE COLUMN ${col + 1}`, x + columnW / 2, graphTop + 5, 6.3, canvasText.muted, "center");
   }
 
-  const longMidpoints: Point[] = [];
-  interactions.forEach(([aIndex, bIndex], edgeIndex) => {
+  type VisibleEdge = {
+    aIndex: number;
+    bIndex: number;
+    start: Point;
+    end: Point;
+    isLong: boolean;
+  };
+  const trimToModuleBoundary = (a: Point, b: Point) => {
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const scale = 1 / Math.max(Math.abs(dx) / (moduleW / 2), Math.abs(dy) / (moduleH / 2));
+    const length = Math.hypot(dx, dy) || 1;
+    const clearance = 2.5 / length;
+    const trim = scale + clearance;
+    return {
+      start: { x: a.x + dx * trim, y: a.y + dy * trim },
+      end: { x: b.x - dx * trim, y: b.y - dy * trim },
+    };
+  };
+  const segmentIntersection = (first: VisibleEdge, second: VisibleEdge): Point | null => {
+    const x1 = first.start.x;
+    const y1 = first.start.y;
+    const x2 = first.end.x;
+    const y2 = first.end.y;
+    const x3 = second.start.x;
+    const y3 = second.start.y;
+    const x4 = second.end.x;
+    const y4 = second.end.y;
+    const denominator = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+    if (Math.abs(denominator) < 0.001) return null;
+    const t = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / denominator;
+    const u = -((x1 - x2) * (y1 - y3) - (y1 - y2) * (x1 - x3)) / denominator;
+    if (t <= 0.04 || t >= 0.96 || u <= 0.04 || u >= 0.96) return null;
+    return { x: x1 + t * (x2 - x1), y: y1 + t * (y2 - y1) };
+  };
+
+  const visibleEdges: VisibleEdge[] = interactions.map(([aIndex, bIndex]) => {
     const a = pointFor(aIndex);
     const b = pointFor(bIndex);
     const distance = Math.hypot(a.x - b.x, a.y - b.y);
     const isLong = distance > columnW * 0.78;
-    if (isLong && longMidpoints.length < 3) {
-      longMidpoints.push({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
-    }
+    const trimmed = trimToModuleBoundary(a, b);
+    return { aIndex, bIndex, ...trimmed, isLong };
+  });
+
+  visibleEdges.forEach((edge) => {
     ctx.save();
     ctx.globalAlpha = 0.42 + spectralT * 0.34;
-    ctx.strokeStyle = spectralT > 0.45 ? colors.green : isLong ? colors.amber : colors.blue;
-    ctx.lineWidth = spectralT > 0.45 ? 2.1 : isLong ? 1.8 : 1.15;
-    if (isLong && spectralT < 0.35) ctx.setLineDash([5, 4]);
+    ctx.strokeStyle = spectralT > 0.45 ? colors.green : edge.isLong ? colors.amber : colors.blue;
+    ctx.lineWidth = spectralT > 0.45 ? 2.1 : edge.isLong ? 1.8 : 1.15;
+    if (edge.isLong && spectralT < 0.35) ctx.setLineDash([5, 4]);
     ctx.beginPath();
-    ctx.moveTo(a.x, a.y);
-    const bow = (edgeIndex % 3 - 1) * 25 * (1 - spectralT);
-    ctx.quadraticCurveTo((a.x + b.x) / 2, (a.y + b.y) / 2 + bow, b.x, b.y);
+    ctx.moveTo(edge.start.x, edge.start.y);
+    ctx.lineTo(edge.end.x, edge.end.y);
     ctx.stroke();
     ctx.restore();
   });
 
+  const intersectionCandidates: Point[] = [];
+  visibleEdges.forEach((first, firstIndex) => {
+    visibleEdges.slice(firstIndex + 1).forEach((second) => {
+      const sharesModule =
+        first.aIndex === second.aIndex || first.aIndex === second.bIndex ||
+        first.bIndex === second.aIndex || first.bIndex === second.bIndex;
+      if (sharesModule || (!first.isLong && !second.isLong)) return;
+      const intersection = segmentIntersection(first, second);
+      if (!intersection) return;
+      const sitsInsideModule = Array.from({ length: 9 }, (_, index) => pointFor(index)).some(
+        (point) => Math.abs(intersection.x - point.x) < moduleW * 0.54 &&
+          Math.abs(intersection.y - point.y) < moduleH * 0.58,
+      );
+      if (sitsInsideModule) return;
+      if (!intersectionCandidates.some((point) => Math.hypot(point.x - intersection.x, point.y - intersection.y) < 12)) {
+        intersectionCandidates.push(intersection);
+      }
+    });
+  });
+  const gapCenters = [
+    leftX + columnW + columnGap / 2,
+    leftX + columnW * 2 + columnGap * 1.5,
+  ];
+  const conflictPoints = gapCenters.flatMap((gapX) => {
+    const nearest = [...intersectionCandidates].sort(
+      (a, b) => Math.abs(a.x - gapX) - Math.abs(b.x - gapX),
+    )[0];
+    return nearest ? [nearest] : [];
+  }).filter((point, index, points) =>
+    points.findIndex((candidate) => Math.hypot(candidate.x - point.x, candidate.y - point.y) < 12) === index,
+  );
+
   if (conflictT > 0.02 && spectralT < 0.88) {
-    longMidpoints.forEach((point, index) => {
+    conflictPoints.forEach((point, index) => {
       const visibility = conflictT * (1 - spectralT);
       const pulse = 1 + 0.12 * Math.sin(performance.now() / 180 + index);
       ctx.save();
@@ -2396,7 +2466,22 @@ function drawPlacementOrdering(canvas: HTMLCanvasElement, progress: number) {
       ctx.stroke();
       ctx.restore();
     });
-    mono("LONG BRIDGES + AOD MOVE CONFLICTS", leftX + leftW / 2, graphBottom + 20, 7.5, colors.pink, "center");
+    const conflictBadgeW = clamp(leftW * 0.58, 265, 340);
+    const conflictBadgeH = 31;
+    const conflictBadgeX = leftX + leftW / 2 - conflictBadgeW / 2;
+    const conflictBadgeY = graphBottom + 12 - conflictBadgeH;
+    ctx.save();
+    ctx.globalAlpha = conflictT * (1 - spectralT);
+    roundRect(conflictBadgeX, conflictBadgeY, conflictBadgeW, conflictBadgeH, conflictBadgeH / 2);
+    ctx.fillStyle = "rgba(255,104,163,.08)";
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255,104,163,.44)";
+    ctx.stroke();
+    ctx.restore();
+    ctx.save();
+    ctx.globalAlpha = conflictT * (1 - spectralT);
+    mono("LONG BRIDGES + AOD MOVE CONFLICTS", leftX + leftW / 2, conflictBadgeY + 21, 7.5, colors.pink, "center");
+    ctx.restore();
   }
 
   for (let moduleIndex = 0; moduleIndex < 9; moduleIndex++) {
@@ -2455,9 +2540,10 @@ function drawPlacementOrdering(canvas: HTMLCanvasElement, progress: number) {
   });
 
   const rightX = width * 0.505;
+  const rightW = width - rightX - inset;
   ctx.save();
   ctx.globalAlpha = 0.18 + resultsT * 0.2;
-  roundRect(rightX, panelY, width - rightX - inset, panelH, 16);
+  roundRect(rightX, panelY, rightW, panelH, 16);
   ctx.fillStyle = "rgba(6,17,28,.7)";
   ctx.fill();
   ctx.strokeStyle = "rgba(50,214,173,.24)";
@@ -2465,6 +2551,157 @@ function drawPlacementOrdering(canvas: HTMLCanvasElement, progress: number) {
   ctx.restore();
   mono("PARK-N-RIDE RESULTS", rightX + 20, panelY + 29, 10, colors.green);
   mono("SPECTRAL PLACEMENT WINS ACROSS BOTH SCALING AXES", rightX + 20, panelY + 52, 7, canvasText.muted);
+
+  type ChartSeries = { label: string; color: string; values: number[] };
+  const drawResultChart = (
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    title: string,
+    xAxisLabel: string,
+    xLabels: number[],
+    series: ChartSeries[],
+    alpha: number,
+  ) => {
+    if (alpha <= 0.01) return;
+    const plotLeft = x + 52;
+    const plotRight = x + w - 18;
+    const plotTop = y + 43;
+    const plotBottom = y + h - 42;
+    const groupWidth = (plotRight - plotLeft) / xLabels.length;
+    const allValues = series.flatMap((item) => item.values);
+    const maxValue = Math.ceil(Math.max(...allValues) / 1000) * 1000;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    roundRect(x, y, w, h, 11);
+    ctx.fillStyle = "rgba(8,25,36,.88)";
+    ctx.fill();
+    ctx.strokeStyle = "rgba(117,151,176,.2)";
+    ctx.stroke();
+    mono(title.toUpperCase(), x + 15, y + 24, 7.2, canvasText.soft);
+    mono("LOWER IS BETTER", x + w - 15, y + 24, 5.3, colors.green, "right");
+
+    for (let tick = 0; tick <= 4; tick++) {
+      const tickY = mix(plotBottom, plotTop, tick / 4);
+      ctx.beginPath();
+      ctx.moveTo(plotLeft, tickY);
+      ctx.lineTo(plotRight, tickY);
+      ctx.strokeStyle = "rgba(128,170,195,.13)";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      mono(String(Math.round(maxValue * tick / 4)), plotLeft - 9, tickY + 3, 5.1, canvasText.muted, "right");
+    }
+    ctx.beginPath();
+    ctx.moveTo(plotLeft, plotTop);
+    ctx.lineTo(plotLeft, plotBottom);
+    ctx.lineTo(plotRight, plotBottom);
+    ctx.strokeStyle = "rgba(184,211,226,.34)";
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+
+    xLabels.forEach((label, index) => {
+      const tickX = plotLeft + groupWidth * (index + 0.5);
+      mono(String(label), tickX, plotBottom + 17, 5.1, canvasText.muted, "center");
+    });
+    mono(xAxisLabel.toUpperCase(), (plotLeft + plotRight) / 2, y + h - 10, 5.5, canvasText.muted, "center");
+    ctx.save();
+    ctx.translate(x + 14, (plotTop + plotBottom) / 2);
+    ctx.rotate(-Math.PI / 2);
+    mono("AVERAGE RUNTIME (MS)", 0, 0, 5.2, canvasText.muted, "center");
+    ctx.restore();
+
+    const barWidth = Math.min(16, groupWidth * 0.22);
+    series.forEach((item, seriesIndex) => {
+      item.values.forEach((value, index) => {
+        const groupCenter = plotLeft + groupWidth * (index + 0.5);
+        const barX = groupCenter + (seriesIndex - 1) * barWidth - barWidth / 2;
+        const barTop = mix(plotBottom, plotTop, value / maxValue);
+        ctx.save();
+        if (item.label === "Spectral") {
+          ctx.shadowColor = item.color;
+          ctx.shadowBlur = 7;
+        }
+        ctx.fillStyle = item.color;
+        ctx.globalAlpha = item.label === "Spectral" ? alpha : alpha * 0.82;
+        ctx.fillRect(barX, barTop, Math.max(3, barWidth - 1.5), plotBottom - barTop);
+        ctx.restore();
+      });
+    });
+    ctx.restore();
+  };
+
+  const arbitrary = colors.amber;
+  const greedy = colors.blue;
+  const spectral = colors.green;
+  const legendY = panelY + 70;
+  const legendItems = [
+    ["ARBITRARY", arbitrary],
+    ["GREEDY", greedy],
+    ["SPECTRAL", spectral],
+  ] as const;
+  ctx.save();
+  ctx.globalAlpha = resultsT;
+  legendItems.forEach(([label, color], index) => {
+    const itemX = rightX + 20 + index * clamp(rightW * 0.22, 90, 122);
+    ctx.fillStyle = color;
+    ctx.fillRect(itemX, legendY - 5, 19, 10);
+    mono(label, itemX + 27, legendY + 3, 5.4, canvasText.muted);
+  });
+  ctx.restore();
+
+  const chartX = rightX + 18;
+  const chartW = rightW - 36;
+  const takeawayH = 44;
+  const chartGap = 11;
+  const chartTop = panelY + 84;
+  const chartAreaBottom = panelY + panelH - takeawayH - 28;
+  const chartH = (chartAreaBottom - chartTop - chartGap) / 2;
+  drawResultChart(
+    chartX,
+    chartTop,
+    chartW,
+    chartH,
+    "Scaling with circuit size",
+    "BB modules",
+    [32, 41, 50, 59, 68, 77, 86, 95, 104, 113],
+    [
+      { label: "Arbitrary", color: arbitrary, values: [3500, 3500, 3850, 4300, 4900, 4700, 5300, 5750, 6400, 7500] },
+      { label: "Greedy", color: greedy, values: [3400, 3400, 3700, 4150, 4650, 4400, 4900, 5200, 6000, 6700] },
+      { label: "Spectral", color: spectral, values: [3300, 3250, 3550, 3850, 4300, 3850, 4300, 4400, 4800, 5300] },
+    ],
+    ease((progress - 0.72) / 0.14),
+  );
+  drawResultChart(
+    chartX,
+    chartTop + chartH + chartGap,
+    chartW,
+    chartH,
+    "Scaling with column capacity",
+    "Modules per compute column",
+    [2, 4, 6, 8, 10],
+    [
+      { label: "Arbitrary", color: arbitrary, values: [7200, 5050, 4450, 4200, 4000] },
+      { label: "Greedy", color: greedy, values: [6200, 4700, 4300, 4100, 3950] },
+      { label: "Spectral", color: spectral, values: [5000, 4150, 3900, 3750, 3650] },
+    ],
+    ease((progress - 0.82) / 0.14),
+  );
+
+  const takeawayT = ease((progress - 0.92) / 0.08);
+  const takeawayY = panelY + panelH - takeawayH - 14;
+  ctx.save();
+  ctx.globalAlpha = takeawayT;
+  roundRect(chartX, takeawayY, chartW, takeawayH, takeawayH / 2);
+  ctx.fillStyle = "rgba(50,214,173,.09)";
+  ctx.fill();
+  ctx.strokeStyle = "rgba(50,214,173,.4)";
+  ctx.stroke();
+  ctx.restore();
+  ctx.save();
+  ctx.globalAlpha = takeawayT;
+  mono("SPECTRAL IS BEST IN EVERY PLACEMENT", chartX + chartW / 2, takeawayY + 28, 8, colors.green, "center");
+  ctx.restore();
 }
 
 function placementPhase(progress: number) {
@@ -3322,45 +3559,10 @@ export default function PresentPage() {
                           : contentScreen === 8
                             ? "Three Park-n-Ride modules shifting in parallel"
                             : contentScreen === 9
-                              ? "Animated comparison of arbitrary and spectral BB-module placement with Park-n-Ride result plots"
+                              ? "Animated comparison of arbitrary and spectral BB-module placement with presentation-native scaling plots"
                               : "Complete Park-n-Ride architecture with compute, interaction, measurement, and T-state factory zones"
           }
         />}
-        {screen === 9 && (
-          <div className="placement-result-plots">
-            <figure
-              style={{
-                opacity: ease((progress - 0.72) / 0.16),
-                transform: `translateY(${mix(18, 0, ease((progress - 0.72) / 0.16))}px)`,
-              }}
-            >
-              <div className="placement-plot-label"><span>FIG. 7</span> Scaling with circuit size</div>
-              <img
-                src={`${import.meta.env.BASE_URL}paper-results/figure-7-runtime-vs-modules.png`}
-                alt="Park-n-Ride Figure 7: spectral placement has the lowest average estimated runtime at every module count"
-              />
-            </figure>
-            <figure
-              style={{
-                opacity: ease((progress - 0.8) / 0.16),
-                transform: `translateY(${mix(18, 0, ease((progress - 0.8) / 0.16))}px)`,
-              }}
-            >
-              <div className="placement-plot-label"><span>FIG. 8</span> Scaling with column capacity</div>
-              <img
-                src={`${import.meta.env.BASE_URL}paper-results/figure-8-runtime-vs-capacity.png`}
-                alt="Park-n-Ride Figure 8: spectral placement has the lowest average estimated runtime at every compute-column capacity"
-              />
-            </figure>
-            <div
-              className="placement-takeaway"
-              style={{ opacity: ease((progress - 0.91) / 0.09) }}
-            >
-              <strong>Spectral is best in every comparison.</strong>
-              <span>At 113 modules: &gt;2 s faster than arbitrary placement · 45% fewer bridge rounds than greedy.</span>
-            </div>
-          </div>
-        )}
         {screen === 10 && (
           <div className="conclusion-takeaways">
             <article style={{
