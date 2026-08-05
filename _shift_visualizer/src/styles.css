@@ -1337,7 +1337,7 @@ footer p:last-child {
   background: #eaf1f4;
   color: #243746;
   font-family: var(--font-geist-mono), ui-monospace, monospace;
-  font-size: 8px;
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.07em;
   text-transform: uppercase;
@@ -1348,7 +1348,7 @@ footer p:last-child {
   border-radius: 4px;
   background: #00205b;
   color: #fff;
-  font-size: 7px;
+  font-size: 12px;
 }
 
 .placement-takeaway {
@@ -1367,13 +1367,13 @@ footer p:last-child {
 .placement-takeaway strong {
   flex: 0 0 auto;
   color: #dcfff5;
-  font-size: 12px;
+  font-size: 18px;
 }
 
 .placement-takeaway span {
   color: rgba(209, 242, 232, 0.76);
   font-family: var(--font-geist-mono), ui-monospace, monospace;
-  font-size: 7px;
+  font-size: 12px;
   line-height: 1.45;
   text-align: right;
 }
@@ -1409,7 +1409,7 @@ footer p:last-child {
   margin-bottom: 8px;
   color: var(--green);
   font-family: var(--font-geist-mono), ui-monospace, monospace;
-  font-size: 6.5px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -1417,7 +1417,7 @@ footer p:last-child {
 
 .conclusion-takeaways article > strong {
   color: #e3f7f2;
-  font-size: clamp(10px, 0.85vw, 14px);
+  font-size: clamp(16px, 1.2vw, 22px);
   line-height: 1.18;
 }
 
@@ -1425,7 +1425,7 @@ footer p:last-child {
   margin-top: 7px;
   color: rgba(157, 190, 182, 0.68);
   font-family: var(--font-geist-mono), ui-monospace, monospace;
-  font-size: 6px;
+  font-size: 10.5px;
   line-height: 1.42;
 }
 
@@ -1438,7 +1438,7 @@ footer p:last-child {
 
 .conclusion-thanks strong {
   color: #fff2cc;
-  font-size: clamp(17px, 1.5vw, 25px);
+  font-size: clamp(20px, 1.8vw, 30px);
   font-weight: 520;
   letter-spacing: -0.03em;
 }
@@ -1447,7 +1447,7 @@ footer p:last-child {
   margin-top: 6px;
   color: var(--amber);
   font-family: var(--font-geist-mono), ui-monospace, monospace;
-  font-size: 8px;
+  font-size: 14px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
@@ -1640,7 +1640,7 @@ footer p:last-child {
   flex-wrap: wrap;
   gap: 12px;
   color: #849aac;
-  font-size: 8px;
+  font-size: 13px;
 }
 
 .present-legend span {
@@ -1684,7 +1684,7 @@ footer p:last-child {
 
 .present-shift span {
   color: #657c8f;
-  font-size: 7px;
+  font-size: 12px;
   letter-spacing: 0.11em;
   text-transform: uppercase;
 }
@@ -1692,7 +1692,7 @@ footer p:last-child {
 .present-shift strong {
   margin-top: 3px;
   color: #d9ebf8;
-  font-size: 11px;
+  font-size: 18px;
 }
 
 .present-controls {
@@ -1906,7 +1906,7 @@ footer p:last-child {
 
   .placement-plot-label {
     padding-block: 5px;
-    font-size: 7px;
+    font-size: 12px;
   }
 
   .placement-takeaway {

@@ -39,6 +39,8 @@ const clamp = (value: number, min = 0, max = 1) =>
   Math.min(max, Math.max(min, value));
 const ease = (value: number) => 1 - Math.pow(1 - clamp(value), 3);
 const mix = (a: number, b: number, t: number) => a + (b - a) * t;
+const slideTextSize = (size: number) =>
+  size * (size <= 8 ? 2 : size <= 10 ? 1.8 : 1.6);
 const mixPoint = (a: Point, b: Point, t: number): Point => ({
   x: mix(a.x, b.x, t),
   y: mix(a.y, b.y, t),
@@ -125,7 +127,7 @@ function drawConnectivityIntro(canvas: HTMLCanvasElement, progress: number) {
   };
   const mono = (text: string, x: number, y: number, size = 9, color = "rgba(190,211,225,.72)", align: CanvasTextAlign = "left") => {
     ctx.save(); ctx.textAlign = align; ctx.fillStyle = color;
-    ctx.font = `600 ${size * 1.08}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+    ctx.font = `600 ${slideTextSize(size)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
     ctx.fillText(text, x, y); ctx.restore();
   };
   const node = (x: number, y: number, color: string, radius = 6, alpha = 1) => {
@@ -144,9 +146,9 @@ function drawConnectivityIntro(canvas: HTMLCanvasElement, progress: number) {
 
   panel(inset, colors.blue);
   panel(inset + panelW + gap, colors.green);
-  const upperY = panelY + 48;
+  const upperY = panelY + 68;
   const sectionGap = 9;
-  const sectionH = (panelH - 71 - sectionGap) / 2;
+  const sectionH = (panelH - 91 - sectionGap) / 2;
 
   const drawFixedGrid = (boxX: number, boxY: number, boxW: number, boxH: number, physical: boolean) => {
     const spacing = clamp(Math.min(boxW, boxH) * 0.23, 38, 64);
@@ -173,8 +175,8 @@ function drawConnectivityIntro(canvas: HTMLCanvasElement, progress: number) {
   };
 
   const leftX = inset;
-  mono("SUPERCONDUCTING QUBITS", leftX + 18, panelY + 24, 10, colors.blue);
-  mono("CONNECTIVITY IS FABRICATED INTO THE CHIP", leftX + 18, panelY + 39, 7, "rgba(137,161,181,.58)");
+  mono("SUPERCONDUCTING QUBITS", leftX + 18, panelY + 27, 10, colors.blue);
+  mono("CONNECTIVITY IS FABRICATED INTO THE CHIP", leftX + 18, panelY + 50, 7, "rgba(137,161,181,.58)");
   subpanel(leftX + 12, upperY, panelW - 24, sectionH, "PHYSICAL LAYOUT · FIXED COUPLERS");
   drawFixedGrid(leftX + 12, upperY, panelW - 24, sectionH, true);
   const lowerY = upperY + sectionH + sectionGap;
@@ -182,8 +184,8 @@ function drawConnectivityIntro(canvas: HTMLCanvasElement, progress: number) {
   drawFixedGrid(leftX + 12, lowerY, panelW - 24, sectionH, false);
 
   const rightX = inset + panelW + gap;
-  mono("NEUTRAL-ATOM QUBITS", rightX + 18, panelY + 24, 10, colors.green);
-  mono("CONNECTIVITY FOLLOWS THE ATOMS", rightX + 18, panelY + 39, 7, "rgba(137,161,181,.58)");
+  mono("NEUTRAL-ATOM QUBITS", rightX + 18, panelY + 27, 10, colors.green);
+  mono("CONNECTIVITY FOLLOWS THE ATOMS", rightX + 18, panelY + 50, 7, "rgba(137,161,181,.58)");
   subpanel(rightX + 12, upperY, panelW - 24, sectionH, "PHYSICAL LAYOUT · AOD TRANSPORT");
   subpanel(rightX + 12, lowerY, panelW - 24, sectionH, "CONNECTIVITY GRAPH · RECONFIGURABLE");
 
@@ -327,7 +329,7 @@ function drawClassicalBitIntro(canvas: HTMLCanvasElement, progress: number) {
     ctx.save();
     ctx.textAlign = align;
     ctx.fillStyle = color;
-    ctx.font = `600 ${size * 1.08}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+    ctx.font = `600 ${slideTextSize(size)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
     ctx.fillText(text, x, y);
     ctx.restore();
   };
@@ -354,8 +356,8 @@ function drawClassicalBitIntro(canvas: HTMLCanvasElement, progress: number) {
   panel(inset + panelW + gap, colors.green);
 
   const leftX = inset;
-  mono("ONE PHYSICAL BIT", leftX + 18, panelY + 24, 10, colors.pink);
-  mono("NO REDUNDANCY", leftX + 18, panelY + 39, 7, "rgba(137,161,181,.58)");
+  mono("ONE PHYSICAL BIT", leftX + 18, panelY + 27, 10, colors.pink);
+  mono("NO REDUNDANCY", leftX + 18, panelY + 50, 7, "rgba(137,161,181,.58)");
   const leftY = panelY + panelH * 0.48;
   const sourceX = leftX + panelW * 0.25;
   const targetX = leftX + panelW * 0.75;
@@ -380,8 +382,8 @@ function drawClassicalBitIntro(canvas: HTMLCanvasElement, progress: number) {
   const rightX = inset + panelW + gap;
   ctx.save();
   ctx.globalAlpha = repeat;
-  mono("7-BIT REPETITION CODE", rightX + 18, panelY + 24, 10, colors.green);
-  mono("CLASSICAL REDUNDANCY + MAJORITY VOTE", rightX + 18, panelY + 39, 7, "rgba(137,161,181,.58)");
+  mono("7-BIT REPETITION CODE", rightX + 18, panelY + 27, 10, colors.green);
+  mono("CLASSICAL REDUNDANCY + MAJORITY VOTE", rightX + 18, panelY + 50, 7, "rgba(137,161,181,.58)");
 
   const cellsY = panelY + panelH * 0.38;
   const cellSize = clamp(panelW * 0.09, 38, 60);
@@ -498,7 +500,7 @@ function drawLogicalQubitIntro(canvas: HTMLCanvasElement, progress: number) {
     ctx.save();
     ctx.textAlign = align;
     ctx.fillStyle = color;
-    ctx.font = `600 ${size * 1.08}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+    ctx.font = `600 ${slideTextSize(size)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
     ctx.fillText(text, x, y);
     ctx.restore();
   };
@@ -522,8 +524,8 @@ function drawLogicalQubitIntro(canvas: HTMLCanvasElement, progress: number) {
   panel(inset + panelW + gap, colors.green);
 
   const leftX = inset;
-  mono("ONE PHYSICAL QUBIT", leftX + 18, panelY + 24, 10, colors.pink);
-  mono("THE STATE LIVES IN ONE PLACE", leftX + 18, panelY + 39, 7, "rgba(137,161,181,.58)");
+  mono("ONE PHYSICAL QUBIT", leftX + 18, panelY + 27, 10, colors.pink);
+  mono("THE STATE LIVES IN ONE PLACE", leftX + 18, panelY + 50, 7, "rgba(137,161,181,.58)");
   const sphereX = leftX + panelW * 0.34;
   const sphereY = panelY + panelH * 0.45;
   const radius = clamp(panelH * 0.23, 74, 135);
@@ -573,8 +575,8 @@ function drawLogicalQubitIntro(canvas: HTMLCanvasElement, progress: number) {
   mono("ONE LOCAL ERROR → INFORMATION CHANGES", leftX + panelW / 2, panelY + panelH - 24, 8, colors.amber, "center");
 
   const rightX = inset + panelW + gap;
-  mono("ONE LOGICAL QUBIT", rightX + 18, panelY + 24, 10, colors.green);
-  mono("7-QUBIT COLOR CODE · CONCEPTUAL VIEW", rightX + 18, panelY + 39, 7, "rgba(137,161,181,.58)");
+  mono("ONE LOGICAL QUBIT", rightX + 18, panelY + 27, 10, colors.green);
+  mono("7-QUBIT COLOR CODE · CONCEPTUAL VIEW", rightX + 18, panelY + 50, 7, "rgba(137,161,181,.58)");
   const centerX = rightX + panelW * 0.51;
   const centerY = panelY + panelH * 0.49;
   const scale = clamp(panelH * 0.19, 68, 116);
@@ -703,11 +705,11 @@ function drawScalingComparison(canvas: HTMLCanvasElement, progress: number) {
     const y = top + row * (rowHeight + gap) + rowHeight / 2;
     ctx.save();
     ctx.fillStyle = accent;
-    ctx.font = "600 12px ui-monospace, SFMono-Regular, Menlo, monospace";
-    ctx.fillText(name.toUpperCase(), 28, y - 7);
+    ctx.font = `600 ${slideTextSize(12)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+    ctx.fillText(name.toUpperCase(), 28, y - 10);
     ctx.fillStyle = "rgba(174, 197, 216, .58)";
-    ctx.font = "500 8px ui-monospace, SFMono-Regular, Menlo, monospace";
-    ctx.fillText(detail.toUpperCase(), 28, y + 10);
+    ctx.font = `500 ${slideTextSize(8)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+    ctx.fillText(detail.toUpperCase(), 28, y + 16);
     ctx.restore();
   };
 
@@ -756,11 +758,11 @@ function drawScalingComparison(canvas: HTMLCanvasElement, progress: number) {
     ctx.globalAlpha = alpha;
     ctx.textAlign = "center";
     ctx.fillStyle = "rgba(229, 241, 249, .9)";
-    ctx.font = "600 9px ui-monospace, SFMono-Regular, Menlo, monospace";
+    ctx.font = `600 ${slideTextSize(9)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
     ctx.fillText(title, x, y);
     ctx.fillStyle = "rgba(137, 161, 181, .7)";
-    ctx.font = "500 7px ui-monospace, SFMono-Regular, Menlo, monospace";
-    ctx.fillText(detail, x, y + 12);
+    ctx.font = `500 ${slideTextSize(7)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+    ctx.fillText(detail, x, y + 20);
     ctx.restore();
   };
 
@@ -935,7 +937,7 @@ function drawScalingComparison(canvas: HTMLCanvasElement, progress: number) {
     ctx.lineWidth = 1.1;
     ctx.strokeRect(x0, y0, patchWidth, patchHeight);
     ctx.fillStyle = "rgba(109, 243, 255, .82)";
-    ctx.font = "600 9px ui-monospace, SFMono-Regular, Menlo, monospace";
+    ctx.font = `600 ${slideTextSize(9)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
     ctx.textAlign = "center";
     ctx.fillText("↔", cx, y0 - 3);
     ctx.fillText("↕", x0 - 6, cy + 3);
@@ -953,8 +955,8 @@ function drawScalingComparison(canvas: HTMLCanvasElement, progress: number) {
     ctx.save();
     ctx.globalAlpha = rowFormulaReveal;
     ctx.fillStyle = "rgba(130, 153, 173, .66)";
-    ctx.font = "500 7px ui-monospace, SFMono-Regular, Menlo, monospace";
-    ctx.fillText("PHYSICAL-QUBIT SCALING", formulaX, y - 18);
+    ctx.font = `500 ${slideTextSize(7)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+    ctx.fillText("PHYSICAL-QUBIT SCALING", formulaX, y - 28);
     ctx.fillStyle = accent;
     ctx.shadowColor = accent;
     ctx.shadowBlur = 12 * rowFormulaReveal;
@@ -962,8 +964,8 @@ function drawScalingComparison(canvas: HTMLCanvasElement, progress: number) {
     ctx.fillText(formula, formulaX, y + 7);
     ctx.shadowBlur = 0;
     ctx.fillStyle = "rgba(154, 177, 196, .68)";
-    ctx.font = "500 8px ui-monospace, SFMono-Regular, Menlo, monospace";
-    ctx.fillText(detail, formulaX, y + 24);
+    ctx.font = `500 ${slideTextSize(8)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+    ctx.fillText(detail, formulaX, y + 38);
     ctx.restore();
   };
 
@@ -1092,14 +1094,14 @@ function drawGateComplexity(canvas: HTMLCanvasElement, progress: number) {
     ctx.save();
     ctx.textAlign = align;
     ctx.fillStyle = color;
-    ctx.font = `600 ${size * 1.08}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+    ctx.font = `600 ${slideTextSize(size)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
     ctx.fillText(text, x, y);
     ctx.restore();
   };
   const badge = (text: string, x: number, y: number, accent: string, alpha = 1) => {
     ctx.save();
     ctx.globalAlpha = alpha;
-    ctx.font = "600 8px ui-monospace, SFMono-Regular, Menlo, monospace";
+    ctx.font = `600 ${slideTextSize(8)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
     const w = ctx.measureText(text).width + 18;
     roundRect(x - w / 2, y - 10, w, 20, 10);
     ctx.fillStyle = `${accent}18`;
@@ -1488,7 +1490,7 @@ function drawShift(canvas: HTMLCanvasElement, step: number) {
   ctx.strokeStyle = "rgba(142, 175, 202, .26)";
   ctx.strokeRect(padX - 8, padY - 8, areaW + 16, areaH + 16);
   ctx.fillStyle = "rgba(186, 211, 231, .56)";
-  ctx.font = "500 9px ui-monospace, SFMono-Regular, Menlo, monospace";
+  ctx.font = `500 ${slideTextSize(9)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
   ctx.fillText("TORIC MODULE · 12 × 6 UNIT CELLS · 288 PHYSICAL SITES", padX, padY - 17);
   ctx.restore();
 }
@@ -1720,7 +1722,7 @@ function drawAodShift(canvas: HTMLCanvasElement, progress: number) {
   ctx.strokeStyle = "rgba(132, 188, 174, .34)";
   ctx.strokeRect(padX - 9, padTop - 9, areaW + 18, areaH + 18);
   ctx.fillStyle = "rgba(194, 230, 220, .64)";
-  ctx.font = "500 9px ui-monospace, SFMono-Regular, Menlo, monospace";
+  ctx.font = `500 ${slideTextSize(9)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
   ctx.fillText("SLM STORAGE LATTICE · 144 DATA ATOMS", padX, padTop - 48);
   ctx.textAlign = "right";
   ctx.fillText(
@@ -1768,7 +1770,7 @@ function drawParallelAod(canvas: HTMLCanvasElement, progress: number) {
 
   ctx.save();
   ctx.fillStyle = "rgba(192, 224, 214, .56)";
-  ctx.font = "500 9px ui-monospace, SFMono-Regular, Menlo, monospace";
+  ctx.font = `500 ${slideTextSize(9)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
   ctx.fillText("ONE COMPUTE COLUMN · SHARED +X / +Y AOD DIRECTIONS", padX, top - 13);
   ctx.restore();
 
@@ -1888,13 +1890,13 @@ function drawParallelAod(canvas: HTMLCanvasElement, progress: number) {
     }
 
     ctx.save();
-    ctx.font = "600 10px ui-monospace, SFMono-Regular, Menlo, monospace";
+    ctx.font = `600 ${slideTextSize(10)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
     ctx.fillStyle = module.color;
     ctx.textAlign = "right";
     ctx.fillText(`${module.name}  δ=(+${module.dx},+${module.dy})`, frameX - 17, frameY + 18);
     ctx.fillStyle = dropT >= 1 ? colors.green : "rgba(177, 202, 220, .6)";
-    ctx.font = "500 8px ui-monospace, SFMono-Regular, Menlo, monospace";
-    ctx.fillText(status, frameX - 17, frameY + 32);
+    ctx.font = `500 ${slideTextSize(8)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+    ctx.fillText(status, frameX - 17, frameY + 40);
     ctx.restore();
   });
 }
@@ -1974,7 +1976,7 @@ function drawPlacementOrdering(canvas: HTMLCanvasElement, progress: number) {
     ctx.save();
     ctx.textAlign = align;
     ctx.fillStyle = color;
-    ctx.font = `600 ${size}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+    ctx.font = `600 ${slideTextSize(size)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
     ctx.fillText(text, x, y);
     ctx.restore();
   };
@@ -1987,8 +1989,8 @@ function drawPlacementOrdering(canvas: HTMLCanvasElement, progress: number) {
   ctx.stroke();
   ctx.restore();
 
-  mono("THE PLACEMENT PROBLEM", leftX + 20, panelY + 28, 10, spectralT > 0.55 ? colors.green : colors.amber);
-  mono("SAME BB MODULES · DIFFERENT PHYSICAL ORDER", leftX + 20, panelY + 46, 7, "rgba(137,161,181,.58)");
+  mono("THE PLACEMENT PROBLEM", leftX + 20, panelY + 29, 10, spectralT > 0.55 ? colors.green : colors.amber);
+  mono("SAME BB MODULES · DIFFERENT PHYSICAL ORDER", leftX + 20, panelY + 52, 7, "rgba(137,161,181,.58)");
   ctx.save();
   roundRect(leftX + leftW - 175, panelY + 17, 154, 31, 8);
   ctx.fillStyle = spectralT > 0.5 ? "rgba(50,214,173,.09)" : "rgba(255,189,102,.08)";
@@ -2121,8 +2123,8 @@ function drawPlacementOrdering(canvas: HTMLCanvasElement, progress: number) {
   ctx.strokeStyle = "rgba(50,214,173,.24)";
   ctx.stroke();
   ctx.restore();
-  mono("PARK-N-RIDE RESULTS", rightX + 20, panelY + 28, 10, colors.green);
-  mono("SPECTRAL PLACEMENT WINS ACROSS BOTH SCALING AXES", rightX + 20, panelY + 46, 7, "rgba(137,161,181,.58)");
+  mono("PARK-N-RIDE RESULTS", rightX + 20, panelY + 29, 10, colors.green);
+  mono("SPECTRAL PLACEMENT WINS ACROSS BOTH SCALING AXES", rightX + 20, panelY + 52, 7, "rgba(137,161,181,.58)");
 }
 
 function placementPhase(progress: number) {
@@ -2201,7 +2203,7 @@ function drawConclusionArchitecture(canvas: HTMLCanvasElement, _progress: number
     ctx.save();
     ctx.textAlign = align;
     ctx.fillStyle = color;
-    ctx.font = `600 ${size}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+    ctx.font = `600 ${slideTextSize(size)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
     ctx.fillText(text, x, y);
     ctx.restore();
   };
