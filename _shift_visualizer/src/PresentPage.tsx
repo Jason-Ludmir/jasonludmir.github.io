@@ -1511,9 +1511,11 @@ function drawAodShift(canvas: HTMLCanvasElement, progress: number) {
   const height = rect.height;
   ctx.clearRect(0, 0, width, height);
 
-  const padX = Math.max(60, width * 0.1);
-  const padTop = Math.max(58, height * 0.16);
-  const padBottom = Math.max(38, height * 0.08);
+  const shiftColumns = 3;
+  const shiftRows = 1;
+  const padX = Math.max(150, width * 0.22);
+  const padTop = Math.max(58, height * 0.14);
+  const padBottom = Math.max(90, height * 0.19);
   const areaW = width - padX * 2;
   const areaH = height - padTop - padBottom;
   const cellW = areaW / COLS;
@@ -1535,8 +1537,8 @@ function drawAodShift(canvas: HTMLCanvasElement, progress: number) {
 
   const horizontalPoint = (column: number, row: number, side: 0 | 1) => {
     const start = atom(column, row, side);
-    if (column < 9) return start;
-    const target = atom(column - 9, row, side);
+    if (column < COLS - shiftColumns) return start;
+    const target = atom(column - COLS, row, side);
     const lift = Math.sin(horizontalT * Math.PI) * Math.min(42, cellH * 0.85);
     return {
       x: mix(start.x, target.x, horizontalT),
@@ -1545,13 +1547,13 @@ function drawAodShift(canvas: HTMLCanvasElement, progress: number) {
   };
 
   const afterHorizontal = (column: number, row: number, side: 0 | 1) =>
-    atom(column >= 9 ? column - 9 : column, row, side);
+    atom(column >= COLS - shiftColumns ? column - COLS : column, row, side);
 
   const verticalPoint = (column: number, row: number, side: 0 | 1) => {
     const start = afterHorizontal(column, row, side);
-    if (row !== 0) return start;
-    const target = afterHorizontal(column, ROWS - 1, side);
-    const bow = Math.sin(verticalT * Math.PI) * Math.min(44, cellW * 0.72);
+    if (row >= shiftRows) return start;
+    const target = afterHorizontal(column, row + ROWS, side);
+    const bow = Math.sin(verticalT * Math.PI) * Math.min(70, cellW * 0.9);
     return {
       x: mix(start.x, target.x, verticalT) + bow,
       y: mix(start.y, target.y, verticalT),
@@ -1559,14 +1561,14 @@ function drawAodShift(canvas: HTMLCanvasElement, progress: number) {
   };
 
   const afterVertical = (column: number, row: number, side: 0 | 1) =>
-    afterHorizontal(column, row === 0 ? ROWS - 1 : row, side);
+    afterHorizontal(column, row < shiftRows ? row + ROWS : row, side);
 
-  // Each roll leaves a small physical module offset. Keep both offsets until
-  // the final monotone resynchronization instead of snapping atoms back.
-  const resyncScale = resyncActive ? 1 - resyncT : 1;
-  const moduleOffset = {
-    x: horizontalT * 10 * resyncScale,
-    y: verticalT * -7 * resyncScale,
+  // The two wrap strips leave the occupied module footprint offset by the
+  // actual shift magnitude. Resynchronization translates the whole captured
+  // module back to the original SLM footprint without undoing the permutation.
+  const resyncTranslation = {
+    x: shiftColumns * cellW * resyncT,
+    y: -shiftRows * cellH * resyncT,
   };
 
   // SLM lattice.
@@ -1584,6 +1586,29 @@ function drawAodShift(canvas: HTMLCanvasElement, progress: number) {
     ctx.moveTo(padX, padTop + r * cellH);
     ctx.lineTo(padX + areaW, padTop + r * cellH);
     ctx.stroke();
+  }
+  ctx.restore();
+
+  // Explicit empty destinations make the wrap intuitive: the right strip
+  // stages to the left of the footprint, then the top row stages below it.
+  ctx.save();
+  ctx.setLineDash([5, 5]);
+  ctx.lineWidth = 1;
+  for (let c = -shiftColumns; c < 0; c++) {
+    for (let r = 0; r < ROWS; r++) {
+      ctx.fillStyle = "rgba(109, 243, 255, .025)";
+      ctx.strokeStyle = "rgba(109, 243, 255, .22)";
+      ctx.fillRect(padX + c * cellW, padTop + r * cellH, cellW, cellH);
+      ctx.strokeRect(padX + c * cellW, padTop + r * cellH, cellW, cellH);
+    }
+  }
+  for (let r = ROWS; r < ROWS + shiftRows; r++) {
+    for (let c = -shiftColumns; c < COLS - shiftColumns; c++) {
+      ctx.fillStyle = "rgba(174, 116, 255, .025)";
+      ctx.strokeStyle = "rgba(174, 116, 255, .22)";
+      ctx.fillRect(padX + c * cellW, padTop + r * cellH, cellW, cellH);
+      ctx.strokeRect(padX + c * cellW, padTop + r * cellH, cellW, cellH);
+    }
   }
   ctx.restore();
 
@@ -1606,11 +1631,11 @@ function drawAodShift(canvas: HTMLCanvasElement, progress: number) {
 
   if (horizontalActive) {
     const lift = Math.sin(horizontalT * Math.PI) * Math.min(42, cellH * 0.85);
-    for (let c = 9; c < COLS; c++) {
+    for (let c = COLS - shiftColumns; c < COLS; c++) {
       const startX = padX + c * cellW + cellW / 2;
-      const targetX = padX + (c - 9) * cellW + cellW / 2;
-      const x = mix(startX, targetX, horizontalT) + moduleOffset.x;
-      const yOffset = -lift + moduleOffset.y;
+      const targetX = padX + (c - COLS) * cellW + cellW / 2;
+      const x = mix(startX, targetX, horizontalT);
+      const yOffset = -lift;
       ctx.save();
       ctx.strokeStyle = `rgba(109, 243, 255, ${pulse})`;
       ctx.lineWidth = 1.35;
@@ -1627,18 +1652,22 @@ function drawAodShift(canvas: HTMLCanvasElement, progress: number) {
       ctx.restore();
     }
 
-    const stripX = mix(padX + 9 * cellW, padX, horizontalT) + moduleOffset.x;
+    const stripX = mix(
+      padX + (COLS - shiftColumns) * cellW,
+      padX - shiftColumns * cellW,
+      horizontalT,
+    );
     ctx.save();
     ctx.fillStyle = `rgba(109, 243, 255, ${0.05 + pulse * 0.07})`;
-    ctx.fillRect(stripX, padTop - lift + moduleOffset.y, 3 * cellW, areaH);
+    ctx.fillRect(stripX, padTop - lift, shiftColumns * cellW, areaH);
     ctx.restore();
   }
   if (verticalActive) {
     const startY = padTop + cellH / 2;
-    const targetY = padTop + (ROWS - 1) * cellH + cellH / 2;
-    const bow = Math.sin(verticalT * Math.PI) * Math.min(44, cellW * 0.72);
-    const railX = padX + bow + moduleOffset.x;
-    const railY = mix(startY, targetY, verticalT) + moduleOffset.y;
+    const targetY = padTop + (ROWS + 0.5) * cellH;
+    const bow = Math.sin(verticalT * Math.PI) * Math.min(70, cellW * 0.9);
+    const railX = padX - shiftColumns * cellW + bow;
+    const railY = mix(startY, targetY, verticalT);
     ctx.save();
     ctx.fillStyle = `rgba(174, 116, 255, ${0.08 + pulse * 0.08})`;
     ctx.fillRect(railX, railY - cellH / 2, areaW, cellH);
@@ -1657,12 +1686,17 @@ function drawAodShift(canvas: HTMLCanvasElement, progress: number) {
   // translate together until the atoms are dropped back into SLM traps.
   if (resyncActive && resyncT < 1) {
     ctx.save();
-    ctx.translate(moduleOffset.x, moduleOffset.y);
+    ctx.translate(resyncTranslation.x, resyncTranslation.y);
     ctx.strokeStyle = `rgba(109, 243, 255, ${0.18 + (1 - resyncT) * 0.28})`;
     ctx.lineWidth = 1;
     ctx.shadowColor = colors.cyan;
     ctx.shadowBlur = 7;
-    ctx.strokeRect(padX - 4, padTop - 4, areaW + 8, areaH + 8);
+    ctx.strokeRect(
+      padX - shiftColumns * cellW - 4,
+      padTop + shiftRows * cellH - 4,
+      areaW + 8,
+      areaH + 8,
+    );
     ctx.restore();
   }
 
@@ -1680,16 +1714,9 @@ function drawAodShift(canvas: HTMLCanvasElement, progress: number) {
         let alpha = 0.93;
 
         point = {
-          x: point.x + moduleOffset.x,
-          y: point.y + moduleOffset.y,
+          x: point.x + resyncTranslation.x,
+          y: point.y + resyncTranslation.y,
         };
-
-        if (
-          (c < 3 && horizontalT > 0.72) ||
-          (r === ROWS - 1 && verticalT > 0.72)
-        ) {
-          alpha = 0.23;
-        }
 
         ctx.save();
         ctx.globalAlpha = alpha;
@@ -1737,7 +1764,7 @@ function drawAodShift(canvas: HTMLCanvasElement, progress: number) {
   ctx.restore();
 }
 
-function drawParallelAod(canvas: HTMLCanvasElement, progress: number) {
+function drawParallelAodLegacy(canvas: HTMLCanvasElement, progress: number) {
   const rect = canvas.getBoundingClientRect();
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
   const pixelWidth = Math.max(1, Math.round(rect.width * dpr));
@@ -1897,6 +1924,239 @@ function drawParallelAod(canvas: HTMLCanvasElement, progress: number) {
     ctx.fillStyle = dropT >= 1 ? colors.green : "rgba(177, 202, 220, .6)";
     ctx.font = `500 ${slideTextSize(8)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
     ctx.fillText(status, frameX - 17, frameY + 40);
+    ctx.restore();
+  });
+}
+
+function drawParallelAod(canvas: HTMLCanvasElement, progress: number) {
+  const rect = canvas.getBoundingClientRect();
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const pixelWidth = Math.max(1, Math.round(rect.width * dpr));
+  const pixelHeight = Math.max(1, Math.round(rect.height * dpr));
+  if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
+    canvas.width = pixelWidth;
+    canvas.height = pixelHeight;
+  }
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const width = rect.width;
+  const height = rect.height;
+  ctx.clearRect(0, 0, width, height);
+
+  const modules = [
+    { name: "M0", dx: 1, dy: 1, color: colors.blue },
+    { name: "M1", dx: 2, dy: 1, color: colors.green },
+    { name: "M2", dx: 3, dy: 2, color: colors.amber },
+  ];
+  const maxDx = Math.max(...modules.map((module) => module.dx));
+  const maxDy = Math.max(...modules.map((module) => module.dy));
+  const phase = progress * 5;
+  const rollX = ease((phase - 0.25) / 1.15);
+  const rollY = ease((phase - 1.45) / 1.1);
+  const resyncSweep = ease((phase - 2.82) / 1.7);
+  const pulse = 0.42 + 0.22 * Math.sin(performance.now() / 175);
+  const stageX = Math.max(210, width * 0.19);
+  const rightPad = Math.max(38, width * 0.045);
+  const top = Math.max(34, height * 0.065);
+  const gap = Math.max(15, height * 0.026);
+  const moduleH = (height - top * 2 - gap * 2) / 3;
+  const stageW = width - stageX - rightPad;
+  const cellW = stageW / (COLS + maxDx);
+  const cellH = (moduleH - 10) / (ROWS + maxDy);
+  const radius = clamp(Math.min(cellW, cellH) * 0.14, 1.8, 4.2);
+
+  ctx.save();
+  ctx.fillStyle = "rgba(192, 224, 214, .66)";
+  ctx.font = `500 ${slideTextSize(9)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+  ctx.fillText("SHARED AOD DIRECTIONS · TRUE WRAP DISTANCES · STAGGERED DROP-OFF", stageX, top - 15);
+  ctx.restore();
+
+  modules.forEach((module, index) => {
+    const frameY = top + index * (moduleH + gap);
+    const gridX = stageX + maxDx * cellW;
+    const gridY = frameY + 5;
+    const torusW = COLS * cellW;
+    const torusH = ROWS * cellH;
+    const alignAt = Math.max(module.dx / maxDx, module.dy / maxDy);
+    const translatedColumns = Math.min(resyncSweep * maxDx, module.dx);
+    const translatedRows = Math.min(resyncSweep * maxDy, module.dy);
+    const resyncX = translatedColumns * cellW;
+    const resyncY = -translatedRows * cellH;
+    const dropped = resyncSweep >= alignAt - 0.002;
+    const dropFlash = ease((resyncSweep - Math.max(0, alignAt - 0.07)) / 0.07);
+    const status =
+      phase < 1.4
+        ? `WRAP ${module.dx} COLUMN${module.dx > 1 ? "S" : ""} LEFT`
+        : phase < 2.65
+          ? `WRAP ${module.dy} ROW${module.dy > 1 ? "S" : ""} DOWN`
+          : phase < 2.82
+            ? `OFFSET  −${module.dx} COL · +${module.dy} ROW`
+            : dropped
+              ? "ALIGNED · DROPPED TO SLM"
+              : "COMMON RESYNC SWEEP";
+
+    ctx.save();
+    ctx.fillStyle = dropped ? "rgba(50, 214, 173, .05)" : "rgba(10, 27, 38, .72)";
+    ctx.strokeStyle = dropped ? "rgba(50, 214, 173, .5)" : "rgba(128, 170, 195, .22)";
+    ctx.fillRect(stageX - 8, frameY - 4, stageW + 16, moduleH + 8);
+    ctx.strokeRect(stageX - 8, frameY - 4, stageW + 16, moduleH + 8);
+    ctx.restore();
+
+    // Original footprint and its empty staging sites.
+    ctx.save();
+    ctx.lineWidth = 0.8;
+    ctx.strokeStyle = "rgba(135, 177, 199, .17)";
+    for (let c = 0; c <= COLS; c++) {
+      ctx.beginPath();
+      ctx.moveTo(gridX + c * cellW, gridY);
+      ctx.lineTo(gridX + c * cellW, gridY + torusH);
+      ctx.stroke();
+    }
+    for (let r = 0; r <= ROWS; r++) {
+      ctx.beginPath();
+      ctx.moveTo(gridX, gridY + r * cellH);
+      ctx.lineTo(gridX + torusW, gridY + r * cellH);
+      ctx.stroke();
+    }
+    ctx.setLineDash([4, 4]);
+    for (let c = -module.dx; c < 0; c++) {
+      for (let r = 0; r < ROWS; r++) {
+        ctx.fillStyle = "rgba(109, 243, 255, .028)";
+        ctx.strokeStyle = "rgba(109, 243, 255, .24)";
+        ctx.fillRect(gridX + c * cellW, gridY + r * cellH, cellW, cellH);
+        ctx.strokeRect(gridX + c * cellW, gridY + r * cellH, cellW, cellH);
+      }
+    }
+    for (let r = ROWS; r < ROWS + module.dy; r++) {
+      for (let c = -module.dx; c < COLS - module.dx; c++) {
+        ctx.fillStyle = "rgba(174, 116, 255, .028)";
+        ctx.strokeStyle = "rgba(174, 116, 255, .22)";
+        ctx.fillRect(gridX + c * cellW, gridY + r * cellH, cellW, cellH);
+        ctx.strokeRect(gridX + c * cellW, gridY + r * cellH, cellW, cellH);
+      }
+    }
+    ctx.restore();
+
+    // Selected AOD columns wrap left together across every module.
+    if (phase < 1.4) {
+      for (let c = COLS - module.dx; c < COLS; c++) {
+        const columnPosition = mix(c, c - COLS, rollX);
+        const beamX = gridX + (columnPosition + 0.5) * cellW;
+        const lift = Math.sin(rollX * Math.PI) * Math.min(24, cellH * 0.75);
+        ctx.save();
+        ctx.strokeStyle = `rgba(109, 243, 255, ${pulse})`;
+        ctx.lineWidth = 1.2;
+        ctx.shadowColor = colors.cyan;
+        ctx.shadowBlur = 7;
+        ctx.beginPath();
+        ctx.moveTo(beamX, gridY - lift);
+        ctx.lineTo(beamX, gridY + torusH - lift);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    // Selected AOD rows wrap down together after the horizontal roll.
+    if (phase >= 1.4 && phase < 2.65) {
+      for (let r = 0; r < module.dy; r++) {
+        const rowPosition = mix(r, r + ROWS, rollY);
+        const railY = gridY + (rowPosition + 0.5) * cellH;
+        const bow = Math.sin(rollY * Math.PI) * Math.min(28, cellW * 0.55);
+        ctx.save();
+        ctx.strokeStyle = `rgba(174, 116, 255, ${pulse})`;
+        ctx.lineWidth = 1.2;
+        ctx.shadowColor = colors.violet;
+        ctx.shadowBlur = 7;
+        ctx.beginPath();
+        ctx.moveTo(gridX - module.dx * cellW + bow, railY);
+        ctx.lineTo(gridX + (COLS - module.dx) * cellW + bow, railY);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    // During resync every occupied column remains captured. All active modules
+    // translate in the same right/up directions and drop as soon as aligned.
+    if (phase >= 2.65 && !dropped) {
+      for (let c = 0; c < COLS; c++) {
+        const shiftedColumn = c >= COLS - module.dx ? c - COLS : c;
+        const beamX = gridX + (shiftedColumn + 0.5) * cellW + resyncX;
+        ctx.save();
+        ctx.strokeStyle = `rgba(109, 243, 255, ${0.18 + pulse * 0.45})`;
+        ctx.lineWidth = 0.9;
+        ctx.beginPath();
+        ctx.moveTo(beamX, gridY + module.dy * cellH + resyncY);
+        ctx.lineTo(beamX, gridY + (ROWS + module.dy) * cellH + resyncY);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    for (let r = 0; r < ROWS; r++) {
+      const rowPosition = r < module.dy ? mix(r, r + ROWS, rollY) : r;
+      for (let c = 0; c < COLS; c++) {
+        const selectedColumn = c >= COLS - module.dx;
+        const selectedRow = r < module.dy;
+        const columnPosition = selectedColumn ? mix(c, c - COLS, rollX) : c;
+        const lift = selectedColumn && phase < 1.4
+          ? Math.sin(rollX * Math.PI) * Math.min(24, cellH * 0.75)
+          : 0;
+        const bow = selectedRow && phase >= 1.4 && phase < 2.65
+          ? Math.sin(rollY * Math.PI) * Math.min(28, cellW * 0.55)
+          : 0;
+        for (const side of [0, 1] as const) {
+          const atomX =
+            gridX +
+            columnPosition * cellW +
+            cellW * (side === 0 ? 0.36 : 0.64) +
+            bow +
+            resyncX;
+          const atomY =
+            gridY +
+            rowPosition * cellH +
+            cellH / 2 -
+            lift +
+            resyncY;
+          ctx.save();
+          ctx.fillStyle =
+            selectedRow && phase >= 1.4
+              ? colors.violet
+              : selectedColumn
+                ? colors.cyan
+                : side === 0
+                  ? module.color
+                  : colors.pink;
+          ctx.globalAlpha = 0.88;
+          ctx.shadowColor = selectedColumn || selectedRow ? ctx.fillStyle : "transparent";
+          ctx.shadowBlur = selectedColumn || selectedRow ? 5 : 0;
+          ctx.beginPath();
+          ctx.arc(atomX, atomY, radius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+    }
+
+    if (dropFlash > 0) {
+      ctx.save();
+      ctx.globalAlpha = dropFlash * 0.55;
+      ctx.strokeStyle = colors.green;
+      ctx.lineWidth = 1.5;
+      ctx.shadowColor = colors.green;
+      ctx.shadowBlur = 10;
+      ctx.strokeRect(gridX, gridY, torusW, torusH);
+      ctx.restore();
+    }
+
+    ctx.save();
+    ctx.textAlign = "right";
+    ctx.fillStyle = module.color;
+    ctx.font = `600 ${slideTextSize(10)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+    ctx.fillText(`${module.name}  δ=(+${module.dx},+${module.dy})`, stageX - 18, frameY + 22);
+    ctx.fillStyle = dropped ? colors.green : "rgba(185, 211, 226, .72)";
+    ctx.font = `500 ${slideTextSize(8)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+    ctx.fillText(status, stageX - 18, frameY + 46);
     ctx.restore();
   });
 }
@@ -2458,7 +2718,7 @@ function parallelPhase(progress: number) {
       description: "The second roll accumulates on the first while AOD traps remain attached.",
     };
   }
-  if (phase < 3.2) {
+  if (phase < 2.82) {
     return {
       number: "03",
       label: "Residual offsets",
@@ -2672,7 +2932,10 @@ export default function PresentPage() {
 
   const parkAodPhases =
     progress < 0.34 ? 0 : progress < 0.64 ? 1 : 2;
-  const parallelDrops = Math.round(3 * ease((progress * 5 - 3.15) / 1.45));
+  const parallelResyncSweep = ease((progress * 5 - 2.82) / 1.7);
+  const parallelDrops = [0.5, 2 / 3, 1].filter(
+    (threshold) => parallelResyncSweep >= threshold - 0.002,
+  ).length;
   const connectivityTarget =
     progress <= 0.001
       ? "fixed ↔ mobile"
