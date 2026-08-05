@@ -18,7 +18,7 @@ const SLIDE_STOPS = [
   [0, 0.34, 0.64, 0.92],
   [0, 0.28, 0.53, 0.918],
   [0, 0.32, 0.68, 1],
-  [0],
+  [0, 1],
 ] as const;
 const STEP_TRANSITION_MS = 720;
 
@@ -2967,22 +2967,34 @@ export default function PresentPage() {
         )}
         {screen === 10 && (
           <div className="conclusion-takeaways">
-            <article>
+            <article style={{
+              opacity: ease(progress / 0.34),
+              transform: `translateY(${mix(16, 0, ease(progress / 0.34))}px)`,
+            }}>
               <span>01 · qLDPC efficiency</span>
               <strong>12 logical qubits per gross block</strong>
               <small>144 code qubits · 288 physical systems including checks</small>
             </article>
-            <article>
+            <article style={{
+              opacity: ease((progress - 0.16) / 0.34),
+              transform: `translateY(${mix(16, 0, ease((progress - 0.16) / 0.34))}px)`,
+            }}>
               <span>02 · motion is routing</span>
               <strong>Global BB shifts use zero SWAPs</strong>
               <small>AOD rolls replace fixed-coupler routing and shift readout</small>
             </article>
-            <article>
+            <article style={{
+              opacity: ease((progress - 0.32) / 0.34),
+              transform: `translateY(${mix(16, 0, ease((progress - 0.32) / 0.34))}px)`,
+            }}>
               <span>03 · co-design wins</span>
               <strong>Place close. Move together. Measure locally.</strong>
               <small>Spectral ordering, parallel shifts, conflict-free bridges, local T injection</small>
             </article>
-            <div className="conclusion-thanks">
+            <div className="conclusion-thanks" style={{
+              opacity: ease((progress - 0.55) / 0.35),
+              transform: `translateY(${mix(16, 0, ease((progress - 0.55) / 0.35))}px)`,
+            }}>
               <strong>Thank you</strong>
               <span>Questions?</span>
             </div>
@@ -3056,7 +3068,13 @@ export default function PresentPage() {
       {screen === 0 || screen === 10 ? (
         <footer className={`title-controls${screen === 10 ? " conclusion-controls" : ""}`}>
           <span className="title-controls-rule" aria-hidden="true" />
-          <p>{screen === 0 ? <><kbd>→</kbd> Begin presentation</> : "End of presentation"}</p>
+          <p>
+            {screen === 0
+              ? <><kbd>→</kbd> Begin presentation</>
+              : progress < 0.999
+                ? <><kbd>→</kbd> Reveal takeaways</>
+                : "End of presentation"}
+          </p>
           <button
             className="fullscreen-button"
             onClick={() => {
