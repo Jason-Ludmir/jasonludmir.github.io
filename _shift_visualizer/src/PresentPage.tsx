@@ -3584,7 +3584,6 @@ export default function PresentPage() {
             }}>
               <span>01 · Efficient protection</span>
               <strong>Better codes protect more information with less hardware</strong>
-              <small>One module protects 12 units of quantum information instead of dedicating separate hardware to each.</small>
             </article>
             <article style={{
               opacity: ease((progress - 0.25) / 0.25),
@@ -3592,7 +3591,6 @@ export default function PresentPage() {
             }}>
               <span>02 · Hardware advantage</span>
               <strong>Moving atoms replaces hundreds of routing gates</strong>
-              <small>Rearranging the hardware performs a global shift without the 576 extra interactions required by fixed connections.</small>
             </article>
             <article style={{
               opacity: ease((progress - 0.5) / 0.25),
@@ -3600,7 +3598,6 @@ export default function PresentPage() {
             }}>
               <span>03 · System-level design</span>
               <strong>Smart placement and coordinated motion make the system faster</strong>
-              <small>Keeping partners nearby and moving modules together reduces conflicts and shortens total runtime.</small>
             </article>
             <div className="conclusion-thanks" style={{
               opacity: ease((progress - 0.75) / 0.25),
