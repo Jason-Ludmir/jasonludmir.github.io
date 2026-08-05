@@ -18,7 +18,7 @@ const SLIDE_STOPS = [
   [0, 0.34, 0.64, 0.92],
   [0, 0.28, 0.53, 0.918],
   [0, 0.32, 0.68, 1],
-  [0, 0.55, 1],
+  [0],
 ] as const;
 const STEP_TRANSITION_MS = 720;
 
@@ -2131,7 +2131,7 @@ function placementPhase(progress: number) {
   };
 }
 
-function drawConclusionArchitecture(canvas: HTMLCanvasElement, progress: number) {
+function drawConclusionArchitecture(canvas: HTMLCanvasElement, _progress: number) {
   const rect = canvas.getBoundingClientRect();
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
   const pixelWidth = Math.max(1, Math.round(rect.width * dpr));
@@ -2147,22 +2147,21 @@ function drawConclusionArchitecture(canvas: HTMLCanvasElement, progress: number)
   const height = rect.height;
   ctx.clearRect(0, 0, width, height);
 
-  const flowT = ease(progress / 0.55);
-  const takeawayT = ease((progress - 0.55) / 0.45);
-  const pulse = 0.68 + 0.32 * Math.sin(performance.now() / 210);
-  const outerX = clamp(width * 0.07, 68, 120);
+  const outerX = clamp(width * 0.055, 58, 104);
   const outerW = width - outerX * 2;
-  const panelY = 17;
-  const takeawaySpace = clamp(height * 0.22, 128, 174);
-  const panelH = height - panelY - takeawaySpace - 15;
-  const measurementH = clamp(panelH * 0.105, 48, 66);
-  const measurementY = panelY + 38;
-  const computeY = measurementY + measurementH + 17;
-  const computeH = panelY + panelH - computeY - 17;
-  const colGap = clamp(outerW * 0.028, 26, 46);
+  const panelY = 14;
+  const takeawaySpace = clamp(height * 0.2, 118, 152);
+  const panelH = height - panelY - takeawaySpace - 12;
+  const measurementY = panelY + 37;
+  const measurementH = clamp(panelH * 0.11, 47, 59);
+  const entanglementY = measurementY + measurementH + 10;
+  const entanglementH = 27;
+  const computeY = entanglementY + entanglementH + 9;
+  const computeH = panelY + panelH - computeY - 13;
+  const colGap = clamp(outerW * 0.022, 22, 34);
   const colW = (outerW - colGap) / 2;
-  const factoryH = clamp(computeH * 0.16, 46, 64);
-  const zoneH = computeH - factoryH - 9;
+  const factoryH = clamp(computeH * 0.145, 43, 57);
+  const zoneH = computeH - factoryH - 8;
 
   const roundRect = (x: number, y: number, w: number, h: number, radius = 12) => {
     ctx.beginPath();
@@ -2183,36 +2182,48 @@ function drawConclusionArchitecture(canvas: HTMLCanvasElement, progress: number)
     ctx.fillText(text, x, y);
     ctx.restore();
   };
-  const arrow = (a: Point, b: Point, color: string, alpha = 1, widthPx = 1.5) => {
-    const angle = Math.atan2(b.y - a.y, b.x - a.x);
+  const moduleBlock = (x: number, y: number, w: number, h: number, color: string, label: string, active = false) => {
     ctx.save();
-    ctx.globalAlpha = alpha;
-    ctx.strokeStyle = color;
-    ctx.fillStyle = color;
-    ctx.lineWidth = widthPx;
-    ctx.beginPath();
-    ctx.moveTo(a.x, a.y);
-    ctx.lineTo(b.x, b.y);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(b.x, b.y);
-    ctx.lineTo(b.x - 7 * Math.cos(angle - 0.45), b.y - 7 * Math.sin(angle - 0.45));
-    ctx.lineTo(b.x - 7 * Math.cos(angle + 0.45), b.y - 7 * Math.sin(angle + 0.45));
-    ctx.closePath();
-    ctx.fill();
-    ctx.restore();
-  };
-  const moduleBlock = (x: number, y: number, w: number, h: number, color: string, label: string, alpha = 1) => {
-    ctx.save();
-    ctx.globalAlpha = alpha;
     roundRect(x, y, w, h, 7);
-    ctx.fillStyle = "rgba(10,28,42,.96)";
+    ctx.fillStyle = active ? "rgba(15,58,54,.72)" : "rgba(10,28,42,.96)";
     ctx.fill();
     ctx.strokeStyle = color;
-    ctx.lineWidth = 1.25;
+    ctx.lineWidth = active ? 1.65 : 1.15;
     ctx.stroke();
     ctx.restore();
-    mono(label, x + w / 2, y + h / 2 + 3, 7, color, "center");
+    mono(label, x + w / 2, y + 16, 6.6, color, "center");
+    for (let atom = 0; atom < 9; atom++) {
+      ctx.save();
+      ctx.globalAlpha = 0.7;
+      ctx.fillStyle = atom % 2 === 0 ? colors.blue : colors.pink;
+      ctx.beginPath();
+      ctx.arc(x + 10 + atom * ((w - 20) / 8), y + h - 9, 1.6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+    if (active) {
+      for (let rail = -2; rail <= 2; rail++) {
+        ctx.save();
+        ctx.globalAlpha = 0.36;
+        ctx.strokeStyle = colors.cyan;
+        ctx.lineWidth = 0.7;
+        ctx.beginPath();
+        ctx.moveTo(x + w / 2 + rail * 7, y - 5);
+        ctx.lineTo(x + w / 2 + rail * 7, y + h + 5);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+  };
+  const lpuBlock = (x: number, y: number, w: number) => {
+    ctx.save();
+    roundRect(x + 7, y - 17, w - 14, 13, 4);
+    ctx.fillStyle = "rgba(174,116,255,.11)";
+    ctx.fill();
+    ctx.strokeStyle = "rgba(174,116,255,.5)";
+    ctx.stroke();
+    ctx.restore();
+    mono("LPU · BRIDGE ROW", x + w / 2, y - 8, 4.7, colors.violet, "center");
   };
 
   ctx.save();
@@ -2222,55 +2233,64 @@ function drawConclusionArchitecture(canvas: HTMLCanvasElement, progress: number)
   ctx.strokeStyle = "rgba(50,214,173,.23)";
   ctx.stroke();
   ctx.restore();
-  mono("FULL PARK-N-RIDE ARCHITECTURE", outerX + 20, panelY + 25, 10, colors.green);
-  mono("ZONED BB EXECUTION · MOTION, MEASUREMENT, AND MAGIC-STATE SUPPLY", outerX + outerW - 20, panelY + 25, 7, "rgba(139,166,185,.58)", "right");
+  mono("PARK-N-RIDE · COMPLETE ZONED ARCHITECTURE", outerX + 20, panelY + 25, 9.5, colors.green);
+  mono("STATIC OVERVIEW", outerX + outerW - 20, panelY + 25, 6.8, "rgba(139,166,185,.58)", "right");
 
   // Global measurement/readout layer spans every compute column.
   ctx.save();
   roundRect(outerX + 15, measurementY, outerW - 30, measurementH, 10);
   ctx.fillStyle = "rgba(255,189,102,.11)";
   ctx.fill();
-  ctx.strokeStyle = `rgba(255,189,102,${0.3 + flowT * 0.2})`;
+  ctx.strokeStyle = "rgba(255,189,102,.38)";
   ctx.stroke();
   ctx.restore();
-  mono("MEASUREMENT + READOUT ZONE", outerX + 31, measurementY + 22, 8.3, colors.amber);
-  mono("SYNDROME READOUT · RESET · CLASSICAL FEEDBACK", outerX + 31, measurementY + 39, 6.2, "rgba(230,198,132,.67)");
-  const detectorStartX = outerX + outerW * 0.58;
-  for (let index = 0; index < 12; index++) {
-    const x = detectorStartX + index * ((outerX + outerW - 48 - detectorStartX) / 11);
+  mono("MEASUREMENT + READOUT ZONE", outerX + 30, measurementY + 21, 8, colors.amber);
+  mono("SYNDROME READOUT · RESET · CLASSICAL FEEDBACK", outerX + 30, measurementY + 38, 5.9, "rgba(230,198,132,.67)");
+  const detectorStartX = outerX + outerW * 0.59;
+  for (let index = 0; index < 14; index++) {
+    const x = detectorStartX + index * ((outerX + outerW - 40 - detectorStartX) / 13);
     ctx.save();
-    ctx.globalAlpha = 0.45 + flowT * 0.4;
+    ctx.globalAlpha = 0.72;
     ctx.fillStyle = index % 2 === 0 ? colors.amber : colors.cyan;
     ctx.beginPath();
-    ctx.arc(x, measurementY + measurementH / 2, 3 + (index % 3 === 0 ? pulse : 0), 0, Math.PI * 2);
+    ctx.arc(x, measurementY + measurementH / 2, index % 3 === 0 ? 3.5 : 2.5, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
   }
+
+  ctx.save();
+  roundRect(outerX + 15, entanglementY, outerW - 30, entanglementH, 8);
+  ctx.fillStyle = "rgba(174,116,255,.08)";
+  ctx.fill();
+  ctx.strokeStyle = "rgba(174,116,255,.28)";
+  ctx.stroke();
+  ctx.restore();
+  mono("SHARED ENTANGLEMENT ZONE · BRIDGE BELL PAIRS ACROSS COMPUTE COLUMNS", outerX + outerW / 2, entanglementY + 18, 6.4, colors.violet, "center");
 
   const drawComputeColumn = (columnIndex: number) => {
     const colX = outerX + columnIndex * (colW + colGap);
     const innerX = colX + 8;
     const innerW = colW - 16;
-    const idlingW = innerW * 0.405;
+    const idlingW = innerW * 0.4;
     const interactionW = innerW * 0.19;
     const shiftW = innerW - idlingW - interactionW - 12;
     const idleX = innerX;
     const interactionX = idleX + idlingW + 6;
     const shiftX = interactionX + interactionW + 6;
-    const factoryY = computeY + zoneH + 9;
+    const factoryY = computeY + zoneH + 8;
 
     ctx.save();
-    roundRect(colX, computeY - 22, colW, computeH + 22, 12);
+    roundRect(colX, computeY - 21, colW, computeH + 21, 12);
     ctx.fillStyle = "rgba(9,26,38,.54)";
     ctx.fill();
     ctx.strokeStyle = "rgba(111,158,190,.2)";
     ctx.stroke();
     ctx.restore();
-    mono(`COMPUTE COLUMN ${columnIndex}`, colX + 12, computeY - 7, 7.5, columnIndex === 0 ? colors.cyan : colors.green);
+    mono(`COMPUTE COLUMN ${columnIndex}`, colX + 12, computeY - 7, 7.4, columnIndex === 0 ? colors.cyan : colors.green);
 
     const subzones = [
-      [idleX, idlingW, "IDLING + ERROR CHECK", colors.blue],
-      [interactionX, interactionW, "BRIDGE INTERACTION", colors.violet],
+      [idleX, idlingW, "IDLING SUBZONE", colors.blue],
+      [interactionX, interactionW, "INTERACTION", colors.violet],
       [shiftX, shiftW, "SHIFT / MEASURE", colors.green],
     ] as const;
     subzones.forEach(([x, zoneW, label, accent]) => {
@@ -2281,68 +2301,44 @@ function drawConclusionArchitecture(canvas: HTMLCanvasElement, progress: number)
       ctx.strokeStyle = `${accent}44`;
       ctx.stroke();
       ctx.restore();
-      mono(label, x + zoneW / 2, computeY + 18, 5.7, accent, "center");
+      mono(label, x + zoneW / 2, computeY + 17, 5.6, accent, "center");
     });
 
-    const moduleW = idlingW * 0.68;
-    const moduleH = clamp(zoneH * 0.15, 31, 43);
-    const moduleX = idleX + (idlingW - moduleW) / 2;
-    const moduleYs = [computeY + zoneH * 0.28, computeY + zoneH * 0.6];
-    moduleYs.forEach((moduleY, moduleIndex) => {
-      const lpuH = 14;
+    const moduleH = clamp(zoneH * 0.135, 31, 40);
+    const idleModuleW = idlingW * 0.7;
+    const shiftModuleW = shiftW * 0.72;
+    const idleModuleX = idleX + (idlingW - idleModuleW) / 2;
+    const shiftModuleX = shiftX + (shiftW - shiftModuleW) / 2;
+    const rowCenters = [computeY + zoneH * 0.23, computeY + zoneH * 0.5, computeY + zoneH * 0.77];
+    const shiftedRows = columnIndex === 0 ? new Set([1]) : new Set([0, 2]);
+    rowCenters.forEach((centerY, rowIndex) => {
+      const isShifted = shiftedRows.has(rowIndex);
+      const x = isShifted ? shiftModuleX : idleModuleX;
+      const w = isShifted ? shiftModuleW : idleModuleW;
+      const y = centerY - moduleH / 2;
+      lpuBlock(x, y, w);
+      moduleBlock(x, y, w, moduleH, isShifted ? colors.green : colors.blue, `BB MODULE ${columnIndex * 3 + rowIndex}`, isShifted);
+    });
+
+    // Static bridge rows show the interaction lane without implying motion.
+    const bridgeX = interactionX + interactionW / 2;
+    rowCenters.forEach((centerY, rowIndex) => {
       ctx.save();
-      roundRect(moduleX + 6, moduleY - lpuH - 4, moduleW - 12, lpuH, 4);
-      ctx.fillStyle = "rgba(174,116,255,.1)";
-      ctx.fill();
-      ctx.strokeStyle = "rgba(174,116,255,.55)";
+      ctx.globalAlpha = shiftedRows.has(rowIndex) ? 0.88 : 0.38;
+      ctx.strokeStyle = shiftedRows.has(rowIndex) ? colors.violet : "rgba(174,116,255,.45)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(interactionX + 10, centerY);
+      ctx.lineTo(interactionX + interactionW - 10, centerY);
       ctx.stroke();
-      ctx.restore();
-      mono("LPU · BRIDGE ROW", moduleX + moduleW / 2, moduleY - 9, 5.2, colors.violet, "center");
-      moduleBlock(moduleX, moduleY, moduleW, moduleH, moduleIndex === 0 ? colors.blue : colors.cyan, `BB MODULE ${columnIndex * 2 + moduleIndex}`);
-      for (let atom = 0; atom < 8; atom++) {
-        ctx.save();
-        ctx.globalAlpha = 0.55;
-        ctx.fillStyle = atom % 2 === 0 ? colors.blue : colors.pink;
+      for (let atom = -3; atom <= 3; atom++) {
+        ctx.fillStyle = atom % 2 === 0 ? colors.violet : colors.cyan;
         ctx.beginPath();
-        ctx.arc(moduleX + 10 + atom * ((moduleW - 20) / 7), moduleY + moduleH - 8, 1.7, 0, Math.PI * 2);
+        ctx.arc(bridgeX + atom * 6, centerY, 1.8, 0, Math.PI * 2);
         ctx.fill();
-        ctx.restore();
       }
+      ctx.restore();
     });
-
-    // Bridge atoms move from an LPU to the interaction lane.
-    const bridgeStart = { x: moduleX + moduleW - 8, y: moduleYs[0] - 11 };
-    const bridgeEnd = { x: interactionX + interactionW / 2, y: computeY + zoneH * 0.48 };
-    const bridgePoint = mixPoint(bridgeStart, bridgeEnd, flowT);
-    arrow(bridgeStart, bridgeEnd, colors.violet, 0.16 + flowT * 0.45, 1.2);
-    for (let bridge = 0; bridge < 9; bridge++) {
-      ctx.save();
-      ctx.globalAlpha = 0.58 + flowT * 0.35;
-      ctx.fillStyle = bridge % 2 === 0 ? colors.violet : colors.cyan;
-      ctx.beginPath();
-      ctx.arc(bridgePoint.x, bridgePoint.y - 22 + bridge * 5.5, 2.1, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-    }
-
-    // One module moves into the shift/measurement zone with its AOD guides.
-    const activeStart = { x: moduleX + moduleW / 2, y: moduleYs[1] + moduleH / 2 };
-    const activeEnd = { x: shiftX + shiftW / 2, y: computeY + zoneH * 0.64 };
-    const activePoint = mixPoint(activeStart, activeEnd, flowT);
-    arrow(activeStart, activeEnd, colors.green, 0.14 + flowT * 0.42, 1.25);
-    const activeW = Math.min(moduleW, shiftW * 0.72);
-    moduleBlock(activePoint.x - activeW / 2, activePoint.y - moduleH / 2, activeW, moduleH, colors.green, "ACTIVE BB MODULE", 0.55 + flowT * 0.45);
-    for (let rail = -2; rail <= 2; rail++) {
-      ctx.save();
-      ctx.globalAlpha = flowT * (0.22 + pulse * 0.16);
-      ctx.strokeStyle = colors.cyan;
-      ctx.lineWidth = 0.8;
-      ctx.beginPath();
-      ctx.moveTo(activePoint.x + rail * 8, activePoint.y - moduleH / 2 - 7);
-      ctx.lineTo(activePoint.x + rail * 8, activePoint.y + moduleH / 2 + 7);
-      ctx.stroke();
-      ctx.restore();
-    }
 
     // Per-column magic-state factory and local injection path.
     ctx.save();
@@ -2352,9 +2348,9 @@ function drawConclusionArchitecture(canvas: HTMLCanvasElement, progress: number)
     ctx.strokeStyle = "rgba(50,214,173,.32)";
     ctx.stroke();
     ctx.restore();
-    mono(`T-STATE FACTORY · COLUMN ${columnIndex}`, innerX + 12, factoryY + 19, 6.5, colors.green);
-    mono("DISTILL → QUEUE → LOCAL INJECT", innerX + 12, factoryY + 36, 5.5, "rgba(166,211,197,.65)");
-    const factoryEndX = innerX + innerW - 28;
+    mono(`T-STATE FACTORY · COLUMN ${columnIndex}`, innerX + 12, factoryY + 18, 6.3, colors.green);
+    mono("DISTILL → QUEUE → LOCAL INJECT", innerX + 12, factoryY + 34, 5.2, "rgba(166,211,197,.65)");
+    const factoryEndX = innerX + innerW - 24;
     for (let stage = 0; stage < 4; stage++) {
       const x = factoryEndX - (3 - stage) * 22;
       ctx.save();
@@ -2365,75 +2361,29 @@ function drawConclusionArchitecture(canvas: HTMLCanvasElement, progress: number)
       ctx.fillRect(-5, -5, 10, 10);
       ctx.strokeRect(-5, -5, 10, 10);
       ctx.restore();
-      if (stage < 3) arrow({ x: x + 8, y: factoryY + factoryH / 2 }, { x: x + 15, y: factoryY + factoryH / 2 }, colors.green, 0.42, 1);
+      if (stage < 3) {
+        ctx.save();
+        ctx.globalAlpha = 0.42;
+        ctx.strokeStyle = colors.green;
+        ctx.beginPath();
+        ctx.moveTo(x + 8, factoryY + factoryH / 2);
+        ctx.lineTo(x + 15, factoryY + factoryH / 2);
+        ctx.stroke();
+        ctx.restore();
+      }
     }
-    arrow(
-      { x: factoryEndX, y: factoryY - 3 },
-      { x: shiftX + shiftW * 0.7, y: computeY + zoneH - 10 },
-      colors.green,
-      0.15 + flowT * 0.48,
-      1.25,
-    );
-
-    // Completed measurements feed the shared zone above.
-    arrow(
-      { x: interactionX + interactionW / 2, y: computeY + 3 },
-      { x: colX + colW / 2, y: measurementY + measurementH + 3 },
-      colors.amber,
-      0.14 + flowT * 0.5,
-      1.25,
-    );
   };
 
   drawComputeColumn(0);
   drawComputeColumn(1);
 
-  // Shared entanglement corridor links the two column-local interaction lanes.
-  const busX = outerX + colW + colGap / 2;
-  ctx.save();
-  ctx.globalAlpha = 0.28 + flowT * 0.42;
-  ctx.strokeStyle = colors.violet;
-  ctx.lineWidth = 3;
-  ctx.setLineDash([5, 6]);
-  ctx.beginPath();
-  ctx.moveTo(busX, computeY + 20);
-  ctx.lineTo(busX, computeY + zoneH - 12);
-  ctx.stroke();
-  ctx.restore();
-  mono("ENTANGLEMENT BUS", busX, computeY + zoneH / 2, 5.6, colors.violet, "center");
-
-  ctx.save();
-  ctx.globalAlpha = takeawayT;
-  roundRect(outerX + outerW / 2 - 192, panelY + panelH - 43, 384, 29, 8);
-  ctx.fillStyle = "rgba(50,214,173,.1)";
-  ctx.fill();
-  ctx.strokeStyle = "rgba(50,214,173,.3)";
-  ctx.stroke();
-  ctx.restore();
-  if (takeawayT > 0.01) {
-    mono("ONE CO-DESIGNED PIPELINE: PLACE → MOVE → ENTANGLE → MEASURE → INJECT", outerX + outerW / 2, panelY + panelH - 24, 6.7, colors.green, "center");
-  }
 }
 
-function conclusionPhase(progress: number) {
-  if (progress < 0.2) {
-    return {
-      number: "01",
-      label: "One zoned neutral-atom architecture",
-      description: "BB modules, LPUs, interaction lanes, measurement, and T factories share one columnar system.",
-    };
-  }
-  if (progress < 0.72) {
-    return {
-      number: "02",
-      label: "Follow the BB execution path",
-      description: "AOD transport connects idle error correction, shifts, bridge entanglement, readout, and injection.",
-    };
-  }
+function conclusionPhase(_progress: number) {
   return {
-    number: "03",
-    label: "The systems takeaway",
-    description: "Hardware-aware placement and motion turn BB-code primitives into an executable neutral-atom pipeline.",
+    number: "END",
+    label: "Complete Park-n-Ride architecture",
+    description: "A static overview of compute, interaction, measurement, and per-column T-state factory zones.",
   };
 }
 
@@ -2663,7 +2613,7 @@ export default function PresentPage() {
       }
       if (event.key === " ") {
         event.preventDefault();
-        if (screen === 0) return;
+        if (screen === 0 || screen === 10) return;
         if (progressRef.current >= finalStop - 0.001) replay();
         else setPlaying((value) => !value);
       }
@@ -3016,13 +2966,7 @@ export default function PresentPage() {
           </div>
         )}
         {screen === 10 && (
-          <div
-            className="conclusion-takeaways"
-            style={{
-              opacity: ease((progress - 0.58) / 0.42),
-              transform: `translateY(${mix(18, 0, ease((progress - 0.58) / 0.42))}px)`,
-            }}
-          >
+          <div className="conclusion-takeaways">
             <article>
               <span>01 · qLDPC efficiency</span>
               <strong>12 logical qubits per gross block</strong>
@@ -3051,7 +2995,7 @@ export default function PresentPage() {
             ))}
           </div>
         )}
-        {screen > 0 && !(screen === 2 && progress < 0.43) && <div className="present-shift">
+        {screen > 0 && screen !== 10 && !(screen === 2 && progress < 0.43) && <div className="present-shift">
           <span>
             {screen === 1
               ? "physical layout ↔ connectivity graph"
@@ -3109,10 +3053,10 @@ export default function PresentPage() {
         </button>
       </section>
 
-      {screen === 0 ? (
-        <footer className="title-controls">
+      {screen === 0 || screen === 10 ? (
+        <footer className={`title-controls${screen === 10 ? " conclusion-controls" : ""}`}>
           <span className="title-controls-rule" aria-hidden="true" />
-          <p><kbd>→</kbd> Begin presentation</p>
+          <p>{screen === 0 ? <><kbd>→</kbd> Begin presentation</> : "End of presentation"}</p>
           <button
             className="fullscreen-button"
             onClick={() => {
