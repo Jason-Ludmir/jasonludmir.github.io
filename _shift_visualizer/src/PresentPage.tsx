@@ -636,7 +636,18 @@ function drawLogicalQubitIntro(canvas: HTMLCanvasElement, progress: number) {
   codePoints.forEach((p, i) => {
     const isError = i === 6 && correction < 0.78;
     if (isError) {
+      // Keep the underlying code node visible while the warning fades in with
+      // the rest of the logical-qubit geometry.
+      ctx.fillStyle = "#d8f7ef";
+      ctx.strokeStyle = colors.green;
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
       ctx.save();
+      ctx.globalAlpha = encodeReveal * encodeReveal;
       ctx.shadowColor = colors.pink;
       ctx.shadowBlur = 13;
       ctx.fillStyle = colors.amber;
