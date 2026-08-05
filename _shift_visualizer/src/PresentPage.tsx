@@ -18,6 +18,7 @@ const SLIDE_STOPS = [
   [0, 0.34, 0.64, 0.92],
   [0, 0.28, 0.53, 0.918],
   [0, 0.32, 0.68, 1],
+  [0, 0.55, 1],
 ] as const;
 const STEP_TRANSITION_MS = 720;
 
@@ -2130,6 +2131,312 @@ function placementPhase(progress: number) {
   };
 }
 
+function drawConclusionArchitecture(canvas: HTMLCanvasElement, progress: number) {
+  const rect = canvas.getBoundingClientRect();
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const pixelWidth = Math.max(1, Math.round(rect.width * dpr));
+  const pixelHeight = Math.max(1, Math.round(rect.height * dpr));
+  if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
+    canvas.width = pixelWidth;
+    canvas.height = pixelHeight;
+  }
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const width = rect.width;
+  const height = rect.height;
+  ctx.clearRect(0, 0, width, height);
+
+  const flowT = ease(progress / 0.55);
+  const takeawayT = ease((progress - 0.55) / 0.45);
+  const pulse = 0.68 + 0.32 * Math.sin(performance.now() / 210);
+  const outerX = clamp(width * 0.07, 68, 120);
+  const outerW = width - outerX * 2;
+  const panelY = 17;
+  const takeawaySpace = clamp(height * 0.22, 128, 174);
+  const panelH = height - panelY - takeawaySpace - 15;
+  const measurementH = clamp(panelH * 0.105, 48, 66);
+  const measurementY = panelY + 38;
+  const computeY = measurementY + measurementH + 17;
+  const computeH = panelY + panelH - computeY - 17;
+  const colGap = clamp(outerW * 0.028, 26, 46);
+  const colW = (outerW - colGap) / 2;
+  const factoryH = clamp(computeH * 0.16, 46, 64);
+  const zoneH = computeH - factoryH - 9;
+
+  const roundRect = (x: number, y: number, w: number, h: number, radius = 12) => {
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h, radius);
+  };
+  const mono = (
+    text: string,
+    x: number,
+    y: number,
+    size = 8,
+    color = "rgba(179,204,222,.68)",
+    align: CanvasTextAlign = "left",
+  ) => {
+    ctx.save();
+    ctx.textAlign = align;
+    ctx.fillStyle = color;
+    ctx.font = `600 ${size}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+    ctx.fillText(text, x, y);
+    ctx.restore();
+  };
+  const arrow = (a: Point, b: Point, color: string, alpha = 1, widthPx = 1.5) => {
+    const angle = Math.atan2(b.y - a.y, b.x - a.x);
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = widthPx;
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(b.x, b.y);
+    ctx.lineTo(b.x - 7 * Math.cos(angle - 0.45), b.y - 7 * Math.sin(angle - 0.45));
+    ctx.lineTo(b.x - 7 * Math.cos(angle + 0.45), b.y - 7 * Math.sin(angle + 0.45));
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  };
+  const moduleBlock = (x: number, y: number, w: number, h: number, color: string, label: string, alpha = 1) => {
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    roundRect(x, y, w, h, 7);
+    ctx.fillStyle = "rgba(10,28,42,.96)";
+    ctx.fill();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.25;
+    ctx.stroke();
+    ctx.restore();
+    mono(label, x + w / 2, y + h / 2 + 3, 7, color, "center");
+  };
+
+  ctx.save();
+  roundRect(outerX, panelY, outerW, panelH, 17);
+  ctx.fillStyle = "rgba(6,18,29,.78)";
+  ctx.fill();
+  ctx.strokeStyle = "rgba(50,214,173,.23)";
+  ctx.stroke();
+  ctx.restore();
+  mono("FULL PARK-N-RIDE ARCHITECTURE", outerX + 20, panelY + 25, 10, colors.green);
+  mono("ZONED BB EXECUTION · MOTION, MEASUREMENT, AND MAGIC-STATE SUPPLY", outerX + outerW - 20, panelY + 25, 7, "rgba(139,166,185,.58)", "right");
+
+  // Global measurement/readout layer spans every compute column.
+  ctx.save();
+  roundRect(outerX + 15, measurementY, outerW - 30, measurementH, 10);
+  ctx.fillStyle = "rgba(255,189,102,.11)";
+  ctx.fill();
+  ctx.strokeStyle = `rgba(255,189,102,${0.3 + flowT * 0.2})`;
+  ctx.stroke();
+  ctx.restore();
+  mono("MEASUREMENT + READOUT ZONE", outerX + 31, measurementY + 22, 8.3, colors.amber);
+  mono("SYNDROME READOUT · RESET · CLASSICAL FEEDBACK", outerX + 31, measurementY + 39, 6.2, "rgba(230,198,132,.67)");
+  const detectorStartX = outerX + outerW * 0.58;
+  for (let index = 0; index < 12; index++) {
+    const x = detectorStartX + index * ((outerX + outerW - 48 - detectorStartX) / 11);
+    ctx.save();
+    ctx.globalAlpha = 0.45 + flowT * 0.4;
+    ctx.fillStyle = index % 2 === 0 ? colors.amber : colors.cyan;
+    ctx.beginPath();
+    ctx.arc(x, measurementY + measurementH / 2, 3 + (index % 3 === 0 ? pulse : 0), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  const drawComputeColumn = (columnIndex: number) => {
+    const colX = outerX + columnIndex * (colW + colGap);
+    const innerX = colX + 8;
+    const innerW = colW - 16;
+    const idlingW = innerW * 0.405;
+    const interactionW = innerW * 0.19;
+    const shiftW = innerW - idlingW - interactionW - 12;
+    const idleX = innerX;
+    const interactionX = idleX + idlingW + 6;
+    const shiftX = interactionX + interactionW + 6;
+    const factoryY = computeY + zoneH + 9;
+
+    ctx.save();
+    roundRect(colX, computeY - 22, colW, computeH + 22, 12);
+    ctx.fillStyle = "rgba(9,26,38,.54)";
+    ctx.fill();
+    ctx.strokeStyle = "rgba(111,158,190,.2)";
+    ctx.stroke();
+    ctx.restore();
+    mono(`COMPUTE COLUMN ${columnIndex}`, colX + 12, computeY - 7, 7.5, columnIndex === 0 ? colors.cyan : colors.green);
+
+    const subzones = [
+      [idleX, idlingW, "IDLING + ERROR CHECK", colors.blue],
+      [interactionX, interactionW, "BRIDGE INTERACTION", colors.violet],
+      [shiftX, shiftW, "SHIFT / MEASURE", colors.green],
+    ] as const;
+    subzones.forEach(([x, zoneW, label, accent]) => {
+      ctx.save();
+      roundRect(x, computeY, zoneW, zoneH, 9);
+      ctx.fillStyle = "rgba(8,22,34,.72)";
+      ctx.fill();
+      ctx.strokeStyle = `${accent}44`;
+      ctx.stroke();
+      ctx.restore();
+      mono(label, x + zoneW / 2, computeY + 18, 5.7, accent, "center");
+    });
+
+    const moduleW = idlingW * 0.68;
+    const moduleH = clamp(zoneH * 0.15, 31, 43);
+    const moduleX = idleX + (idlingW - moduleW) / 2;
+    const moduleYs = [computeY + zoneH * 0.28, computeY + zoneH * 0.6];
+    moduleYs.forEach((moduleY, moduleIndex) => {
+      const lpuH = 14;
+      ctx.save();
+      roundRect(moduleX + 6, moduleY - lpuH - 4, moduleW - 12, lpuH, 4);
+      ctx.fillStyle = "rgba(174,116,255,.1)";
+      ctx.fill();
+      ctx.strokeStyle = "rgba(174,116,255,.55)";
+      ctx.stroke();
+      ctx.restore();
+      mono("LPU · BRIDGE ROW", moduleX + moduleW / 2, moduleY - 9, 5.2, colors.violet, "center");
+      moduleBlock(moduleX, moduleY, moduleW, moduleH, moduleIndex === 0 ? colors.blue : colors.cyan, `BB MODULE ${columnIndex * 2 + moduleIndex}`);
+      for (let atom = 0; atom < 8; atom++) {
+        ctx.save();
+        ctx.globalAlpha = 0.55;
+        ctx.fillStyle = atom % 2 === 0 ? colors.blue : colors.pink;
+        ctx.beginPath();
+        ctx.arc(moduleX + 10 + atom * ((moduleW - 20) / 7), moduleY + moduleH - 8, 1.7, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    });
+
+    // Bridge atoms move from an LPU to the interaction lane.
+    const bridgeStart = { x: moduleX + moduleW - 8, y: moduleYs[0] - 11 };
+    const bridgeEnd = { x: interactionX + interactionW / 2, y: computeY + zoneH * 0.48 };
+    const bridgePoint = mixPoint(bridgeStart, bridgeEnd, flowT);
+    arrow(bridgeStart, bridgeEnd, colors.violet, 0.16 + flowT * 0.45, 1.2);
+    for (let bridge = 0; bridge < 9; bridge++) {
+      ctx.save();
+      ctx.globalAlpha = 0.58 + flowT * 0.35;
+      ctx.fillStyle = bridge % 2 === 0 ? colors.violet : colors.cyan;
+      ctx.beginPath();
+      ctx.arc(bridgePoint.x, bridgePoint.y - 22 + bridge * 5.5, 2.1, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // One module moves into the shift/measurement zone with its AOD guides.
+    const activeStart = { x: moduleX + moduleW / 2, y: moduleYs[1] + moduleH / 2 };
+    const activeEnd = { x: shiftX + shiftW / 2, y: computeY + zoneH * 0.64 };
+    const activePoint = mixPoint(activeStart, activeEnd, flowT);
+    arrow(activeStart, activeEnd, colors.green, 0.14 + flowT * 0.42, 1.25);
+    const activeW = Math.min(moduleW, shiftW * 0.72);
+    moduleBlock(activePoint.x - activeW / 2, activePoint.y - moduleH / 2, activeW, moduleH, colors.green, "ACTIVE BB MODULE", 0.55 + flowT * 0.45);
+    for (let rail = -2; rail <= 2; rail++) {
+      ctx.save();
+      ctx.globalAlpha = flowT * (0.22 + pulse * 0.16);
+      ctx.strokeStyle = colors.cyan;
+      ctx.lineWidth = 0.8;
+      ctx.beginPath();
+      ctx.moveTo(activePoint.x + rail * 8, activePoint.y - moduleH / 2 - 7);
+      ctx.lineTo(activePoint.x + rail * 8, activePoint.y + moduleH / 2 + 7);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // Per-column magic-state factory and local injection path.
+    ctx.save();
+    roundRect(innerX, factoryY, innerW, factoryH, 9);
+    ctx.fillStyle = "rgba(50,214,173,.075)";
+    ctx.fill();
+    ctx.strokeStyle = "rgba(50,214,173,.32)";
+    ctx.stroke();
+    ctx.restore();
+    mono(`T-STATE FACTORY · COLUMN ${columnIndex}`, innerX + 12, factoryY + 19, 6.5, colors.green);
+    mono("DISTILL → QUEUE → LOCAL INJECT", innerX + 12, factoryY + 36, 5.5, "rgba(166,211,197,.65)");
+    const factoryEndX = innerX + innerW - 28;
+    for (let stage = 0; stage < 4; stage++) {
+      const x = factoryEndX - (3 - stage) * 22;
+      ctx.save();
+      ctx.translate(x, factoryY + factoryH / 2);
+      ctx.rotate(Math.PI / 4);
+      ctx.fillStyle = stage === 3 ? colors.green : "rgba(50,214,173,.13)";
+      ctx.strokeStyle = "rgba(50,214,173,.58)";
+      ctx.fillRect(-5, -5, 10, 10);
+      ctx.strokeRect(-5, -5, 10, 10);
+      ctx.restore();
+      if (stage < 3) arrow({ x: x + 8, y: factoryY + factoryH / 2 }, { x: x + 15, y: factoryY + factoryH / 2 }, colors.green, 0.42, 1);
+    }
+    arrow(
+      { x: factoryEndX, y: factoryY - 3 },
+      { x: shiftX + shiftW * 0.7, y: computeY + zoneH - 10 },
+      colors.green,
+      0.15 + flowT * 0.48,
+      1.25,
+    );
+
+    // Completed measurements feed the shared zone above.
+    arrow(
+      { x: interactionX + interactionW / 2, y: computeY + 3 },
+      { x: colX + colW / 2, y: measurementY + measurementH + 3 },
+      colors.amber,
+      0.14 + flowT * 0.5,
+      1.25,
+    );
+  };
+
+  drawComputeColumn(0);
+  drawComputeColumn(1);
+
+  // Shared entanglement corridor links the two column-local interaction lanes.
+  const busX = outerX + colW + colGap / 2;
+  ctx.save();
+  ctx.globalAlpha = 0.28 + flowT * 0.42;
+  ctx.strokeStyle = colors.violet;
+  ctx.lineWidth = 3;
+  ctx.setLineDash([5, 6]);
+  ctx.beginPath();
+  ctx.moveTo(busX, computeY + 20);
+  ctx.lineTo(busX, computeY + zoneH - 12);
+  ctx.stroke();
+  ctx.restore();
+  mono("ENTANGLEMENT BUS", busX, computeY + zoneH / 2, 5.6, colors.violet, "center");
+
+  ctx.save();
+  ctx.globalAlpha = takeawayT;
+  roundRect(outerX + outerW / 2 - 192, panelY + panelH - 43, 384, 29, 8);
+  ctx.fillStyle = "rgba(50,214,173,.1)";
+  ctx.fill();
+  ctx.strokeStyle = "rgba(50,214,173,.3)";
+  ctx.stroke();
+  ctx.restore();
+  if (takeawayT > 0.01) {
+    mono("ONE CO-DESIGNED PIPELINE: PLACE → MOVE → ENTANGLE → MEASURE → INJECT", outerX + outerW / 2, panelY + panelH - 24, 6.7, colors.green, "center");
+  }
+}
+
+function conclusionPhase(progress: number) {
+  if (progress < 0.2) {
+    return {
+      number: "01",
+      label: "One zoned neutral-atom architecture",
+      description: "BB modules, LPUs, interaction lanes, measurement, and T factories share one columnar system.",
+    };
+  }
+  if (progress < 0.72) {
+    return {
+      number: "02",
+      label: "Follow the BB execution path",
+      description: "AOD transport connects idle error correction, shifts, bridge entanglement, readout, and injection.",
+    };
+  }
+  return {
+    number: "03",
+    label: "The systems takeaway",
+    description: "Hardware-aware placement and motion turn BB-code primitives into an executable neutral-atom pipeline.",
+  };
+}
+
 function parkPhase(progress: number) {
   const phase = progress * 5;
   if (phase < 0.55) {
@@ -2229,7 +2536,9 @@ export default function PresentPage() {
                     ? parkPhase(progress)
                     : screen === 8
                       ? parallelPhase(progress)
-                      : placementPhase(progress);
+                      : screen === 9
+                        ? placementPhase(progress)
+                        : conclusionPhase(progress);
 
   const setBoundedProgress = useCallback((next: number) => {
     const bounded = clamp(next);
@@ -2280,6 +2589,8 @@ export default function PresentPage() {
           drawParallelAod(canvasRef.current, progressRef.current);
         } else if (screen === 9) {
           drawPlacementOrdering(canvasRef.current, progressRef.current);
+        } else if (screen === 10) {
+          drawConclusionArchitecture(canvasRef.current, progressRef.current);
         }
       }
       frameRef.current = requestAnimationFrame(tick);
@@ -2299,7 +2610,7 @@ export default function PresentPage() {
 
   const changeScreen = useCallback(
     (nextScreen: number, initialProgress = 0) => {
-      const bounded = Math.max(0, Math.min(9, nextScreen));
+      const bounded = Math.max(0, Math.min(10, nextScreen));
       if (bounded === screen) return;
       transitionRef.current = null;
       setScreen(bounded);
@@ -2323,7 +2634,7 @@ export default function PresentPage() {
     const nextStop = slideStops.find((stop) => stop > current + 0.012);
     if (nextStop !== undefined) {
       animateTo(nextStop);
-    } else if (screen < 9) {
+    } else if (screen < 10) {
       changeScreen(screen + 1, 0);
     }
   }, [animateTo, changeScreen, screen, slideStops]);
@@ -2542,10 +2853,25 @@ export default function PresentPage() {
       timeline: ["Arbitrary order", "Move conflicts", "Spectral order", "Measured results"],
       note: "Park-n-Ride Figs. 7–8 and Table II · module order changes travel distance and AOD contention",
     },
+    {
+      kicker: "Conclusion · the complete system",
+      title: "Conclusions & Thank You!",
+      primaryLabel: "Park-n-Ride architecture",
+      primaryValue: "end-to-end",
+      primaryNote: "BB primitives → zoned neutral-atom execution",
+      costs: [
+        ["Logical density", "12", "logical qubits / gross block"],
+        ["Shift SWAPs", "0", "AOD transport replaces routing"],
+        ["Placement", "spectral", "shorter bridges + fewer conflicts"],
+        ["Non-Clifford", "local", "one T factory per column"],
+      ],
+      timeline: ["Full architecture", "Motion + bridges", "Measure + inject", "Takeaways"],
+      note: "Architecture extends Park-n-Ride Figs. 3 and 6 with explicit measurement and per-column T-state factory zones",
+    },
   ] as const;
   const current = titles[screen];
   const legends =
-    screen <= 5 || screen === 9
+    screen <= 5 || screen === 9 || screen === 10
       ? []
       : screen === 6
       ? [
@@ -2577,7 +2903,7 @@ export default function PresentPage() {
           </div>
         </div>
         <nav className="deck-tabs" aria-label="Presentation screens">
-          {["Title", "Connectivity", "Classical bits", "Logical qubits", "Why qLDPC", "Gate tradeoff", "Fixed couplers", "Park ’n Ride", "Parallel column", "Placement results"].map((label, index) => (
+          {["Title", "Connectivity", "Classical bits", "Logical qubits", "Why qLDPC", "Gate tradeoff", "Fixed couplers", "Park ’n Ride", "Parallel column", "Placement results", "Conclusion"].map((label, index) => (
             <button
               key={label}
               className={screen === index ? "is-active" : ""}
@@ -2649,7 +2975,9 @@ export default function PresentPage() {
                           ? "Animated Park-n-Ride AOD shift automorphism"
                           : screen === 8
                             ? "Three Park-n-Ride modules shifting in parallel"
-                            : "Animated comparison of arbitrary and spectral BB-module placement with Park-n-Ride result plots"
+                            : screen === 9
+                              ? "Animated comparison of arbitrary and spectral BB-module placement with Park-n-Ride result plots"
+                              : "Complete Park-n-Ride architecture with compute, interaction, measurement, and T-state factory zones"
           }
         />}
         {screen === 9 && (
@@ -2687,6 +3015,35 @@ export default function PresentPage() {
             </div>
           </div>
         )}
+        {screen === 10 && (
+          <div
+            className="conclusion-takeaways"
+            style={{
+              opacity: ease((progress - 0.58) / 0.42),
+              transform: `translateY(${mix(18, 0, ease((progress - 0.58) / 0.42))}px)`,
+            }}
+          >
+            <article>
+              <span>01 · qLDPC efficiency</span>
+              <strong>12 logical qubits per gross block</strong>
+              <small>144 code qubits · 288 physical systems including checks</small>
+            </article>
+            <article>
+              <span>02 · motion is routing</span>
+              <strong>Global BB shifts use zero SWAPs</strong>
+              <small>AOD rolls replace fixed-coupler routing and shift readout</small>
+            </article>
+            <article>
+              <span>03 · co-design wins</span>
+              <strong>Place close. Move together. Measure locally.</strong>
+              <small>Spectral ordering, parallel shifts, conflict-free bridges, local T injection</small>
+            </article>
+            <div className="conclusion-thanks">
+              <strong>Thank you</strong>
+              <span>Questions?</span>
+            </div>
+          </div>
+        )}
         {legends.length > 0 && (
           <div className="present-legend" aria-hidden="true">
             {legends.map(([className, label]) => (
@@ -2706,6 +3063,8 @@ export default function PresentPage() {
                     ? "topological patches vs qLDPC block"
                     : screen === 5
                       ? "logical entangling gate"
+                      : screen === 10
+                        ? "complete Park-n-Ride system"
                       : screen === 9
                         ? "weighted module-interaction graph"
                       : screen === 8
@@ -2723,6 +3082,8 @@ export default function PresentPage() {
                     ? "1 logical ↔ 12 logical"
                     : screen === 5
                       ? "direct layer ↔ control stack"
+                      : screen === 10
+                        ? "place → move → measure → inject"
                       : screen === 9
                         ? "Fiedler order → column packing"
                       : screen === 8
@@ -2741,7 +3102,7 @@ export default function PresentPage() {
         <button
           className="deck-edge deck-edge-right"
           onClick={advance}
-          disabled={screen === 9 && progress >= finalStop - 0.001}
+          disabled={screen === 10 && progress >= finalStop - 0.001}
           aria-label="Next state or presentation screen"
         >
           →
