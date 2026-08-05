@@ -16,7 +16,7 @@ const SLIDE_STOPS = [
   [0, 0.32, 0.58, 0.94],
   [0, 2 / 6, 3 / 6, 5 / 6, 1],
   [0, 0.34, 0.64, 0.92],
-  [0, 0.28, 0.53, 0.918],
+  [0, 0.28, 0.53, 0.634, 0.668, 0.904],
   [0, 0.32, 0.68, 1],
   [0, 0.25, 0.5, 0.75, 1],
 ] as const;
@@ -1557,6 +1557,10 @@ function drawShift(canvas: HTMLCanvasElement, step: number) {
   ctx.fillStyle = canvasText.muted;
   ctx.font = `500 ${slideTextSize(9)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
   ctx.fillText("TORIC MODULE · 12 × 6 UNIT CELLS · 288 PHYSICAL SITES", padX, padY - 17);
+  ctx.textAlign = "right";
+  ctx.fillStyle = colors.cyan;
+  ctx.font = `650 ${slideTextSize(9)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+  ctx.fillText("SHIFT AUTOMORPHISM · δ = x³y⁻¹", padX + areaW, padY - 17);
   ctx.restore();
 }
 
@@ -1578,13 +1582,14 @@ function drawAodShift(canvas: HTMLCanvasElement, progress: number) {
 
   const shiftColumns = 3;
   const shiftRows = 1;
-  const padX = Math.max(150, width * 0.22);
+  const basePadX = Math.max(150, width * 0.22);
   const padTop = Math.max(58, height * 0.14);
   const padBottom = Math.max(90, height * 0.19);
-  const areaW = width - padX * 2;
+  const areaW = width - basePadX * 2;
   const areaH = height - padTop - padBottom;
   const cellW = areaW / COLS;
   const cellH = areaH / ROWS;
+  const padX = basePadX + shiftColumns * cellW / 2;
   const radius = clamp(Math.min(cellW, cellH) * 0.12, 2.2, 6.4);
   const phase = progress * 5;
   const horizontalT = ease((phase - 0.35) / 1.35);
@@ -1826,6 +1831,9 @@ function drawAodShift(canvas: HTMLCanvasElement, progress: number) {
     padX + areaW,
     padTop - 48,
   );
+  ctx.fillStyle = colors.green;
+  ctx.font = `650 ${slideTextSize(9)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+  ctx.fillText("SHIFT AUTOMORPHISM · δ = x³y⁻¹", padX + areaW, padTop - 19);
   ctx.restore();
 }
 
@@ -2790,10 +2798,35 @@ function parallelPhase(progress: number) {
       description: "Different shift magnitudes leave the modules temporarily misaligned.",
     };
   }
+  const resyncSweep = ease((phase - 2.82) / 1.7);
+  const droppedModules = [0.5, 2 / 3, 1].filter(
+    (threshold) => resyncSweep >= threshold - 0.002,
+  ).length;
+  if (droppedModules === 0) {
+    return {
+      number: "04",
+      label: "Resynchronize to the first module",
+      description: "The common sweep advances until the first module reaches its SLM footprint.",
+    };
+  }
+  if (droppedModules === 1) {
+    return {
+      number: "05",
+      label: "Drop module M0",
+      description: "M0 parks while M1 and M2 remain captured and continue the common sweep.",
+    };
+  }
+  if (droppedModules === 2) {
+    return {
+      number: "06",
+      label: "Drop module M1",
+      description: "M1 parks next while the largest-offset module continues moving.",
+    };
+  }
   return {
-    number: "04",
-    label: "Staggered SLM drop-off",
-    description: "A monotone sweep parks each module as soon as it reaches alignment.",
+    number: "07",
+    label: "Drop module M2",
+    description: "The final module aligns and all three shifts are complete.",
   };
 }
 
@@ -3142,7 +3175,7 @@ export default function PresentPage() {
         ["Modules aligned", parallelDrops.toString(), "/ 3"],
         ["Compute columns", "1", "column-local"],
       ],
-      timeline: ["Roll x", "Roll y", "Offsets", "Staggered SLM drop"],
+      timeline: ["Roll x", "Roll y", "Drop M0", "Drop M1", "Drop M2"],
       note: "Shared directions preserve AOD ordering · modules drop as they align",
     },
     {
