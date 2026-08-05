@@ -85,8 +85,8 @@ function connectivityPhase(progress: number) {
   }
   return {
     number: "03",
-    label: "Move directly to the right column",
-    description: "The same transported qubits form a different set of interactions without fixed couplers.",
+    label: "Split connectivity across two columns",
+    description: "The top two transported qubits move right while the bottom qubit remains coupled to the middle column.",
   };
 }
 
@@ -114,8 +114,6 @@ function drawConnectivityIntro(canvas: HTMLCanvasElement, progress: number) {
   const pulse = 0.65 + 0.35 * Math.sin(performance.now() / 220);
   const middleT = ease(progress / 0.28);
   const rightT = ease((progress - 0.28) / 0.72);
-  const middleStrength = progress <= 0.28 ? middleT : 1 - rightT;
-  const rightStrength = rightT;
 
   const roundRect = (x: number, y: number, w: number, h: number, r = 14) => {
     ctx.beginPath(); ctx.roundRect(x, y, w, h, r);
@@ -197,40 +195,66 @@ function drawConnectivityIntro(canvas: HTMLCanvasElement, progress: number) {
     const rightColumnX = boxX + boxW * 0.8;
     const middleMeetX = middleX - clamp(boxW * 0.1, 38, 52);
     const rightMeetX = rightColumnX - clamp(boxW * 0.1, 38, 52);
-    const movingX = progress <= 0.28
+    const topMovingX = progress <= 0.28
       ? mix(baseX, middleMeetX, middleT)
       : mix(middleMeetX, rightMeetX, rightT);
+    const bottomMovingX = progress <= 0.28
+      ? mix(baseX, middleMeetX, middleT)
+      : middleMeetX;
     const moving: Point[] = [];
     const middle: Point[] = [];
     const right: Point[] = [];
     for (let r = 0; r < 3; r++) {
       const y = centerY + (r - 1) * rowGap;
-      moving.push({ x: movingX, y }); middle.push({ x: middleX, y }); right.push({ x: rightColumnX, y });
+      moving.push({ x: r < 2 ? topMovingX : bottomMovingX, y });
+      middle.push({ x: middleX, y });
+      right.push({ x: rightColumnX, y });
     }
+
+    const middleStrengthForRow = (row: number) =>
+      progress <= 0.28 ? middleT : row < 2 ? 1 - rightT : 1;
+    const rightStrengthForRow = (row: number) =>
+      progress <= 0.28 || row === 2 ? 0 : rightT;
 
     if (!physical) {
       for (let r = 0; r < 2; r++) {
-        edge(moving[r], moving[r + 1], "rgba(109,243,255,.35)");
+        const movingColumnStrength = r === 0 ? 1 : 1 - rightT;
+        edge(moving[r], moving[r + 1], "rgba(109,243,255,.35)", movingColumnStrength);
         edge(middle[r], middle[r + 1], "rgba(50,214,173,.35)");
         edge(right[r], right[r + 1], "rgba(50,214,173,.35)");
       }
       for (let r = 0; r < 3; r++) {
-        edge(moving[r], middle[r], colors.cyan, middleStrength, 2.2);
-        edge(moving[r], right[r], colors.violet, rightStrength, 2.2);
+        edge(moving[r], middle[r], colors.cyan, middleStrengthForRow(r), 2.2);
+        edge(moving[r], right[r], colors.violet, rightStrengthForRow(r), 2.2);
       }
     }
 
     if (physical) {
-      ctx.save(); ctx.strokeStyle = `rgba(109,243,255,${0.35 + pulse * 0.35})`; ctx.lineWidth = 1.2;
-      ctx.shadowColor = colors.cyan; ctx.shadowBlur = 8;
-      ctx.beginPath(); ctx.moveTo(movingX, moving[0].y - 19); ctx.lineTo(movingX, moving[2].y + 19); ctx.stroke(); ctx.restore();
+      const drawAodRail = (x: number, y1: number, y2: number, alpha: number) => {
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.strokeStyle = `rgba(109,243,255,${0.35 + pulse * 0.35})`;
+        ctx.lineWidth = 1.2;
+        ctx.shadowColor = colors.cyan;
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        ctx.moveTo(x, y1);
+        ctx.lineTo(x, y2);
+        ctx.stroke();
+        ctx.restore();
+      };
+      drawAodRail(topMovingX, moving[0].y - 19, moving[2].y + 19, 1 - rightT);
+      drawAodRail(topMovingX, moving[0].y - 19, moving[1].y + 19, rightT);
+      drawAodRail(bottomMovingX, moving[2].y - 19, moving[2].y + 19, rightT);
       [...middle, ...right].forEach((p) => {
         ctx.fillStyle = "rgba(50,214,173,.12)"; ctx.beginPath(); ctx.arc(p.x, p.y, 18, 0, Math.PI * 2); ctx.fill();
       });
-      moving.forEach((p) => {
+      moving.forEach((p, row) => {
+        const middleStrength = middleStrengthForRow(row);
+        const rightStrength = rightStrengthForRow(row);
         const interaction = Math.max(middleStrength, rightStrength);
         ctx.save(); ctx.globalAlpha = interaction * 0.35;
-        ctx.fillStyle = interaction === rightStrength && rightStrength > middleStrength ? colors.violet : colors.cyan;
+        ctx.fillStyle = rightStrength > middleStrength ? colors.violet : colors.cyan;
         ctx.beginPath(); ctx.arc(p.x, p.y, 20, 0, Math.PI * 2); ctx.fill(); ctx.restore();
       });
     }
@@ -239,21 +263,11 @@ function drawConnectivityIntro(canvas: HTMLCanvasElement, progress: number) {
     middle.forEach((p) => node(p.x, p.y, colors.green, physical ? 7 : 5.5));
     right.forEach((p) => node(p.x, p.y, colors.green, physical ? 7 : 5.5));
     if (physical) {
-      mono("AOD", movingX, moving[0].y - 26, 6.5, colors.cyan, "center");
-      mono("MIDDLE", middleX, moving[2].y + 30, 6, "rgba(125,174,160,.62)", "center");
-      mono("RIGHT", rightColumnX, moving[2].y + 30, 6, "rgba(125,174,160,.62)", "center");
+      mono("AOD", topMovingX, moving[0].y - 26, 6.5, colors.cyan, "center");
     }
   };
   drawMovingSystem(rightX + 12, upperY, panelW - 24, sectionH, true);
   drawMovingSystem(rightX + 12, lowerY, panelW - 24, sectionH, false);
-
-  ctx.save(); ctx.globalAlpha = Math.max(middleStrength, rightStrength);
-  const status = rightStrength > middleStrength ? "AOD ↔ RIGHT" : "AOD ↔ MIDDLE";
-  const statusColor = rightStrength > middleStrength ? colors.violet : colors.cyan;
-  roundRect(rightX + panelW - 126, panelY + 12, 108, 23, 11);
-  ctx.fillStyle = "rgba(12,30,40,.92)"; ctx.fill(); ctx.strokeStyle = `${statusColor}66`; ctx.stroke();
-  mono(status, rightX + panelW - 72, panelY + 27, 6.5, statusColor, "center");
-  ctx.restore();
 }
 
 function classicalBitPhase(progress: number) {
@@ -2943,7 +2957,7 @@ export default function PresentPage() {
       ? "fixed ↔ mobile"
       : progress <= 0.281
         ? "middle"
-        : "right";
+        : "middle + right";
   const adaptiveLinks =
     progress <= 0.28
       ? Math.round(3 * ease(progress / 0.28))
@@ -2951,7 +2965,7 @@ export default function PresentPage() {
 
   const titles = [
     {
-      kicker: "Rice University · Park ’n Ride",
+      kicker: "Rice University",
       title: "Hardware-Aware Compilation and Execution of Bivariate Bicycle Codes on Neutral-Atom Systems",
       primaryLabel: "",
       primaryValue: "",
@@ -2961,8 +2975,8 @@ export default function PresentPage() {
       note: "",
     },
     {
-      kicker: "Hardware connectivity · the architectural divide",
-      title: "Fixed couplers or interactions that move?",
+      kicker: "Hardware connectivity",
+      title: "Superconductors vs. Neutral Atoms",
       primaryLabel: "Connectivity model",
       primaryValue: connectivityTarget,
       primaryNote: "fabricated edges versus position-defined edges",
@@ -2976,8 +2990,8 @@ export default function PresentPage() {
       note: "Conceptual connectivity comparison · Rydberg interactions appear when transported atoms enter the interaction radius",
     },
     {
-      kicker: "Classical error correction · the intuition",
-      title: "One bad bit should not decide the answer.",
+      kicker: "Classical error correction",
+      title: "One bad bit should not decide the answer",
       primaryLabel: "Stored copies",
       primaryValue: "1 → 7",
       primaryNote: "add redundancy before transmission",
@@ -2991,8 +3005,8 @@ export default function PresentPage() {
       note: "Classical repetition-code intuition · seven copies can tolerate one flipped bit with a wide voting margin",
     },
     {
-      kicker: "Quantum error correction · the core idea",
-      title: "From a fragile qubit to a logical qubit.",
+      kicker: "Quantum error correction",
+      title: "From a fragile qubit to a logical qubit",
       primaryLabel: "Quantum information encoded",
       primaryValue: "1 → 7",
       primaryNote: "physical systems in a small color code",
@@ -3006,8 +3020,8 @@ export default function PresentPage() {
       note: "Conceptual 7-qubit color-code illustration · syndromes expose the error, not |ψ⟩",
     },
     {
-      kicker: "Encoding overhead · distance scaling",
-      title: "Why qLDPC changes the scaling.",
+      kicker: "Encoding overhead",
+      title: "Why qLDPC changes the scaling",
       primaryLabel: "Logical qubits per BB block",
       primaryValue: "12",
       primaryNote: "gross and two-gross",
@@ -3021,8 +3035,8 @@ export default function PresentPage() {
       note: "Gross examples are finite BB codes · asymptotic statement applies to good qLDPC families",
     },
     {
-      kicker: "Logical gates · the qLDPC tradeoff",
-      title: "Fewer qubits. Harder logical control.",
+      kicker: "Logical gates",
+      title: "Fewer qubits. Harder logical control",
       primaryLabel: "Direct physical gate layers",
       primaryValue: progress < 0.48 ? "1" : "→ protocol",
       primaryNote: "bitwise CSS → BB instruction stack",
@@ -3036,8 +3050,8 @@ export default function PresentPage() {
       note: "*Blockwise transversal CNOT assumes matching pairwise couplers · BB costs from Tour de Gross Tables 2 and Fig. 9",
     },
     {
-      kicker: "Fixed-coupler shift · δ = x³y⁻¹",
-      title: "One global shift, in physical gates.",
+      kicker: "Fixed-coupler shift",
+      title: "One global shift, in physical gates",
       primaryLabel: "Two-qubit gates executed",
       primaryValue: cnotCount.toLocaleString(),
       primaryNote: "/ 576 CNOTs",
@@ -3051,8 +3065,8 @@ export default function PresentPage() {
       note: "Shift network only · syndrome cycle intentionally excluded",
     },
     {
-      kicker: "Park ’n Ride · same logical δ = x³y⁻¹",
-      title: "The same shift becomes atom transport.",
+      kicker: "Park ’n Ride",
+      title: "The same shift becomes atom transport",
       primaryLabel: "Two-qubit gates executed",
       primaryValue: "0",
       primaryNote: "/ 576 avoided",
@@ -3066,8 +3080,8 @@ export default function PresentPage() {
       note: "Park-n-Ride Sec. IV-D · shift cost moves to transport and trap switching",
     },
     {
-      kicker: "Park ’n Ride · one compute column",
-      title: "Different shifts execute at the same time.",
+      kicker: "Park ’n Ride",
+      title: "Different shifts execute at the same time",
       primaryLabel: "Shift automorphisms in flight",
       primaryValue: progress >= 1 ? "3" : progress > 0.04 ? "3" : "0",
       primaryNote: "/ 3 concurrent",
@@ -3081,8 +3095,8 @@ export default function PresentPage() {
       note: "Shared directions preserve AOD ordering · modules drop as they align",
     },
     {
-      kicker: "Static module placement · spectral seriation",
-      title: "Where modules sit determines how far bridges move.",
+      kicker: "Static module placement",
+      title: "Where modules sit determines how far bridges move",
       primaryLabel: "Placement strategy",
       primaryValue: "spectral",
       primaryNote: "weighted interaction graph → compute columns",
@@ -3096,8 +3110,8 @@ export default function PresentPage() {
       note: "Park-n-Ride Figs. 7–8 and Table II · module order changes travel distance and AOD contention",
     },
     {
-      kicker: "Conclusion · the complete system",
-      title: "Conclusions & Thank You!",
+      kicker: "Conclusion",
+      title: "Conclusions & Thank You",
       primaryLabel: "Park-n-Ride architecture",
       primaryValue: "end-to-end",
       primaryNote: "BB primitives → zoned neutral-atom execution",
