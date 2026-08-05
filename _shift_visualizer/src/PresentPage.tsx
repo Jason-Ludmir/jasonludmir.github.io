@@ -2,11 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-const TOTAL_STEPS = 6;
+const TOTAL_STEPS = 4;
 const RUN_TIME_MS = 12_000;
 const COLS = 12;
 const ROWS = 6;
-const STOPS = [0, 2, 3, 5, 6];
 const SLIDE_STOPS = [
   [0],
   [0, 0.28, 1],
@@ -14,7 +13,7 @@ const SLIDE_STOPS = [
   [0, 0.46, 0.7, 1],
   [0, 0.42, 0.68, 1],
   [0, 0.32, 0.58, 0.94],
-  [0, 2 / 6, 3 / 6, 5 / 6],
+  [0, 0.5, 1],
   [0, 0.34, 0.64, 0.92],
   [0, 0.28, 0.53, 0.634, 0.668, 0.904],
   [0, 0.32, 0.68, 1],
@@ -1339,24 +1338,17 @@ function phaseForStep(step: number) {
       description: "144 data states move into the check-qubit layer.",
     };
   }
-  if (step < 3) {
+  if (step < 4) {
     return {
       number: "02",
-      label: "Reset",
-      description: "The first 144 ancilla-assisted SWAPs are complete.",
-    };
-  }
-  if (step < 5) {
-    return {
-      number: "03",
       label: "Second routing layer",
       description: "144 states move into their shifted data positions.",
     };
   }
   return {
-    number: "04",
+    number: "02",
     label: "Shift complete",
-    description: "288 SWAPs. 576 two-qubit gates. Five physical timesteps.",
+    description: "288 SWAPs. 576 two-qubit gates. Four physical timesteps.",
   };
 }
 
@@ -1477,9 +1469,9 @@ function drawShift(canvas: HTMLCanvasElement, step: number) {
   }
 
   const firstMotion = ease(step / 2);
-  const secondMotion = ease((step - 3) / 2);
+  const secondMotion = ease((step - 2) / 2);
   const firstActive = step < 2;
-  const secondActive = step >= 3 && step < 5;
+  const secondActive = step >= 2 && step < 4;
   const pulse = 0.22 + 0.1 * Math.sin(performance.now() / 180);
 
   if (firstActive || secondActive) {
@@ -1549,8 +1541,8 @@ function drawShift(canvas: HTMLCanvasElement, step: number) {
         const via = node(c, r, checkKind);
         const target = node(c + 3, r - 1, kind);
         let point = start;
-        if (step < 3) point = mixPoint(start, via, firstMotion);
-        else if (step < 6) point = mixPoint(via, target, secondMotion);
+        if (step < 2) point = mixPoint(start, via, firstMotion);
+        else if (step < 4) point = mixPoint(via, target, secondMotion);
         else point = target;
         ctx.save();
         ctx.beginPath();
@@ -1577,9 +1569,9 @@ function drawShift(canvas: HTMLCanvasElement, step: number) {
   ctx.restore();
 
   const twoQubitGates =
-    step < 3
+    step < 2
       ? Math.round(288 * clamp(step / 2))
-      : 288 + Math.round(288 * clamp((step - 3) / 2));
+      : 288 + Math.round(288 * clamp((step - 2) / 2));
   const counterW = clamp(width * 0.23, 290, 360);
   const counterH = 34;
   const counterX = padX + areaW - counterW;
@@ -3294,17 +3286,14 @@ export default function PresentPage() {
   }, [advance, finalStop, replay, retreat, screen]);
 
   const cnotCount =
-    step < 3
+    step < 2
       ? Math.round(288 * clamp(step / 2))
-      : 288 + Math.round(288 * clamp((step - 3) / 2));
+      : 288 + Math.round(288 * clamp((step - 2) / 2));
   const swapCount =
-    step < 3
+    step < 2
       ? Math.round(144 * clamp(step / 2))
-      : 144 + Math.round(144 * clamp((step - 3) / 2));
-  const resetCount =
-    Math.round(144 * clamp(step - 2));
-  const activeConnections =
-    step < 2 || (step >= 3 && step < 5) ? 144 : 0;
+      : 144 + Math.round(144 * clamp((step - 2) / 2));
+  const activeConnections = step < 4 ? 144 : 0;
 
   const parkAodPhases =
     progress < 0.34 ? 0 : progress < 0.64 ? 1 : 2;
@@ -3418,10 +3407,9 @@ export default function PresentPage() {
       costs: [
         ["SWAPs complete", swapCount.toString(), "/ 288"],
         ["Active connections", activeConnections.toString(), "parallel width"],
-        ["Measure / reset", resetCount.toString(), "/ 144"],
-        ["Physical timestep", Math.min(5, Math.floor(step) + 1).toString(), "/ 5"],
+        ["Physical timestep", Math.min(4, Math.floor(step) + 1).toString(), "/ 4"],
       ],
-      timeline: ["Swap 01", "Reset", "Swap 02"],
+      timeline: ["Swap 01", "Swap 02"],
       note: "Shift network only · syndrome cycle intentionally excluded",
     },
     {
