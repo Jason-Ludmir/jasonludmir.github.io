@@ -634,7 +634,8 @@ function drawLogicalQubitIntro(canvas: HTMLCanvasElement, progress: number) {
     ctx.lineWidth = correction > 0.15 && i < 2 ? 2 : 1; ctx.stroke();
   });
   codePoints.forEach((p, i) => {
-    const isError = i === 6 && correction < 0.78;
+    const isError =
+      i === 6 && encodeReveal > 0.001 && correction < 0.78;
     if (isError) {
       // Keep the underlying code node visible while the warning fades in with
       // the rest of the logical-qubit geometry.
