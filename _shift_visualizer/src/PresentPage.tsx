@@ -35,6 +35,11 @@ const colors = {
   violet: "#ae74ff",
 };
 
+const canvasText = {
+  muted: "rgba(207, 224, 237, .86)",
+  soft: "rgba(229, 240, 248, .93)",
+};
+
 const clamp = (value: number, min = 0, max = 1) =>
   Math.min(max, Math.max(min, value));
 const ease = (value: number) => 1 - Math.pow(1 - clamp(value), 3);
@@ -123,7 +128,7 @@ function drawConnectivityIntro(canvas: HTMLCanvasElement, progress: number) {
     ctx.fillStyle = "rgba(8,21,32,.72)"; ctx.fill();
     ctx.globalAlpha = 0.22; ctx.strokeStyle = accent; ctx.stroke(); ctx.restore();
   };
-  const mono = (text: string, x: number, y: number, size = 9, color = "rgba(190,211,225,.72)", align: CanvasTextAlign = "left") => {
+  const mono = (text: string, x: number, y: number, size = 9, color = canvasText.muted, align: CanvasTextAlign = "left") => {
     ctx.save(); ctx.textAlign = align; ctx.fillStyle = color;
     ctx.font = `600 ${slideTextSize(size)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
     ctx.fillText(text, x, y); ctx.restore();
@@ -139,7 +144,7 @@ function drawConnectivityIntro(canvas: HTMLCanvasElement, progress: number) {
   const subpanel = (x: number, y: number, w: number, h: number, label: string) => {
     ctx.save(); roundRect(x, y, w, h, 10); ctx.fillStyle = "rgba(8,19,29,.48)"; ctx.fill();
     ctx.strokeStyle = "rgba(128,158,180,.14)"; ctx.stroke(); ctx.restore();
-    mono(label, x + 11, y + 18, 6.5, "rgba(137,161,181,.58)");
+    mono(label, x + 11, y + 18, 6.5, canvasText.muted);
   };
 
   panel(inset, colors.blue);
@@ -174,16 +179,16 @@ function drawConnectivityIntro(canvas: HTMLCanvasElement, progress: number) {
 
   const leftX = inset;
   mono("SUPERCONDUCTING QUBITS", leftX + 18, panelY + 27, 10, colors.blue);
-  mono("CONNECTIVITY IS FABRICATED INTO THE CHIP", leftX + 18, panelY + 50, 7, "rgba(137,161,181,.58)");
+  mono("CONNECTIVITY IS FABRICATED INTO THE CHIP", leftX + 18, panelY + 50, 7, canvasText.muted);
   subpanel(leftX + 12, upperY, panelW - 24, sectionH, "PHYSICAL LAYOUT · FIXED COUPLERS");
   drawFixedGrid(leftX + 12, upperY, panelW - 24, sectionH, true);
   const lowerY = upperY + sectionH + sectionGap;
-  subpanel(leftX + 12, lowerY, panelW - 24, sectionH, "CONNECTIVITY GRAPH · DEGREE ≤ 4");
+  subpanel(leftX + 12, lowerY, panelW - 24, sectionH, "CONNECTIVITY GRAPH · IMMUTABLE");
   drawFixedGrid(leftX + 12, lowerY, panelW - 24, sectionH, false);
 
   const rightX = inset + panelW + gap;
   mono("NEUTRAL-ATOM QUBITS", rightX + 18, panelY + 27, 10, colors.green);
-  mono("CONNECTIVITY FOLLOWS THE ATOMS", rightX + 18, panelY + 50, 7, "rgba(137,161,181,.58)");
+  mono("CONNECTIVITY FOLLOWS THE ATOMS", rightX + 18, panelY + 50, 7, canvasText.muted);
   subpanel(rightX + 12, upperY, panelW - 24, sectionH, "PHYSICAL LAYOUT · AOD TRANSPORT");
   subpanel(rightX + 12, lowerY, panelW - 24, sectionH, "CONNECTIVITY GRAPH · RECONFIGURABLE");
 
@@ -351,7 +356,7 @@ function drawClassicalBitIntro(canvas: HTMLCanvasElement, progress: number) {
     ctx.stroke();
     ctx.restore();
   };
-  const mono = (text: string, x: number, y: number, size = 9, color = "rgba(190,211,225,.72)", align: CanvasTextAlign = "left") => {
+  const mono = (text: string, x: number, y: number, size = 9, color = canvasText.muted, align: CanvasTextAlign = "left") => {
     ctx.save();
     ctx.textAlign = align;
     ctx.fillStyle = color;
@@ -383,7 +388,7 @@ function drawClassicalBitIntro(canvas: HTMLCanvasElement, progress: number) {
 
   const leftX = inset;
   mono("ONE PHYSICAL BIT", leftX + 18, panelY + 27, 10, colors.pink);
-  mono("NO REDUNDANCY", leftX + 18, panelY + 50, 7, "rgba(137,161,181,.58)");
+  mono("NO REDUNDANCY", leftX + 18, panelY + 50, 7, canvasText.muted);
   const leftY = panelY + panelH * 0.48;
   const sourceX = leftX + panelW * 0.25;
   const targetX = leftX + panelW * 0.75;
@@ -409,7 +414,7 @@ function drawClassicalBitIntro(canvas: HTMLCanvasElement, progress: number) {
   ctx.save();
   ctx.globalAlpha = repeat;
   mono("7-BIT REPETITION CODE", rightX + 18, panelY + 27, 10, colors.green);
-  mono("CLASSICAL REDUNDANCY + MAJORITY VOTE", rightX + 18, panelY + 50, 7, "rgba(137,161,181,.58)");
+  mono("CLASSICAL REDUNDANCY + MAJORITY VOTE", rightX + 18, panelY + 50, 7, canvasText.muted);
 
   const cellsY = panelY + panelH * 0.38;
   const cellSize = clamp(panelW * 0.09, 38, 60);
@@ -420,7 +425,7 @@ function drawClassicalBitIntro(canvas: HTMLCanvasElement, progress: number) {
     const local = ease(repeat * 1.42 - i * 0.07);
     const isFault = i === 3 && flip > 0.65 && vote < 0.88;
     bitCell(cellsX + i * (cellSize + cellGap), cellsY, isFault ? "0" : "1", isFault ? colors.amber : colors.green, local, isFault, cellSize);
-    mono(`b${i + 1}`, cellsX + i * (cellSize + cellGap), cellsY + cellSize * 0.75, 5.8, "rgba(137,161,181,.55)", "center");
+    mono(`b${i + 1}`, cellsX + i * (cellSize + cellGap), cellsY + cellSize * 0.75, 5.8, canvasText.muted, "center");
   }
 
   ctx.save(); ctx.globalAlpha = vote;
@@ -428,7 +433,7 @@ function drawClassicalBitIntro(canvas: HTMLCanvasElement, progress: number) {
   roundRect(rightX + panelW * 0.12, tallyY, panelW * 0.76, 64, 11);
   ctx.fillStyle = "rgba(13,36,42,.88)"; ctx.fill();
   ctx.strokeStyle = "rgba(50,214,173,.3)"; ctx.stroke();
-  mono("COUNT THE COPIES", rightX + panelW * 0.16, tallyY + 18, 7, "rgba(151,176,187,.68)");
+  mono("COUNT THE COPIES", rightX + panelW * 0.16, tallyY + 18, 7, canvasText.muted);
   mono("1", rightX + panelW * 0.31, tallyY + 46, 19, colors.green, "center");
   mono("× 6", rightX + panelW * 0.38, tallyY + 44, 9, colors.green);
   mono("0", rightX + panelW * 0.59, tallyY + 46, 19, colors.amber, "center");
@@ -522,7 +527,7 @@ function drawLogicalQubitIntro(canvas: HTMLCanvasElement, progress: number) {
     ctx.stroke();
     ctx.restore();
   };
-  const mono = (text: string, x: number, y: number, size = 9, color = "rgba(190,211,225,.72)", align: CanvasTextAlign = "left") => {
+  const mono = (text: string, x: number, y: number, size = 9, color = canvasText.muted, align: CanvasTextAlign = "left") => {
     ctx.save();
     ctx.textAlign = align;
     ctx.fillStyle = color;
@@ -551,7 +556,7 @@ function drawLogicalQubitIntro(canvas: HTMLCanvasElement, progress: number) {
 
   const leftX = inset;
   mono("ONE PHYSICAL QUBIT", leftX + 18, panelY + 27, 10, colors.pink);
-  mono("THE STATE LIVES IN ONE PLACE", leftX + 18, panelY + 50, 7, "rgba(137,161,181,.58)");
+  mono("THE STATE LIVES IN ONE PLACE", leftX + 18, panelY + 50, 7, canvasText.muted);
   const sphereX = leftX + panelW * 0.34;
   const sphereY = panelY + panelH * 0.45;
   const radius = clamp(panelH * 0.23, 74, 135);
@@ -564,8 +569,8 @@ function drawLogicalQubitIntro(canvas: HTMLCanvasElement, progress: number) {
   ctx.strokeStyle = "rgba(165,194,214,.18)";
   ctx.beginPath(); ctx.moveTo(sphereX - radius - 13, sphereY); ctx.lineTo(sphereX + radius + 13, sphereY); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(sphereX, sphereY + radius + 13); ctx.lineTo(sphereX, sphereY - radius - 13); ctx.stroke();
-  mono("|0⟩", sphereX + 7, sphereY - radius - 8, 7, "rgba(203,221,232,.65)");
-  mono("|1⟩", sphereX + 7, sphereY + radius + 13, 7, "rgba(203,221,232,.65)");
+  mono("|0⟩", sphereX + 7, sphereY - radius - 8, 7, canvasText.soft);
+  mono("|1⟩", sphereX + 7, sphereY + radius + 13, 7, canvasText.soft);
 
   const stateAngle = -1.02;
   const cleanTip = { x: sphereX + Math.cos(stateAngle) * radius * 0.79, y: sphereY + Math.sin(stateAngle) * radius * 0.79 };
@@ -595,14 +600,14 @@ function drawLogicalQubitIntro(canvas: HTMLCanvasElement, progress: number) {
     ctx.strokeStyle = `${accent}55`; ctx.stroke();
     mono(symbol, cardX + 12, y + 21, 14, accent);
     mono(name, cardX + 34, y + 18, 7.5, "rgba(228,240,248,.87)");
-    mono(detail, cardX + 34, y + 34, 6.5, "rgba(146,168,185,.68)");
+    mono(detail, cardX + 34, y + 34, 6.5, canvasText.muted);
     ctx.restore();
   });
   mono("ONE LOCAL ERROR → INFORMATION CHANGES", leftX + panelW / 2, panelY + panelH - 24, 8, colors.amber, "center");
 
   const rightX = inset + panelW + gap;
   mono("ONE LOGICAL QUBIT", rightX + 18, panelY + 27, 10, colors.green);
-  mono("7-QUBIT COLOR CODE · CONCEPTUAL VIEW", rightX + 18, panelY + 50, 7, "rgba(137,161,181,.58)");
+  mono("7-QUBIT COLOR CODE · CONCEPTUAL VIEW", rightX + 18, panelY + 50, 7, canvasText.muted);
   const centerX = rightX + panelW * 0.51;
   const centerY = panelY + panelH * 0.49;
   const scale = clamp(panelH * 0.19, 68, 116);
@@ -641,7 +646,7 @@ function drawLogicalQubitIntro(canvas: HTMLCanvasElement, progress: number) {
 
   ctx.save(); ctx.globalAlpha = encodeReveal;
   const logicalStateY = centerY - scale - 30;
-  roundRect(centerX - 62, logicalStateY - 14, 124, 28, 14);
+  roundRect(centerX - 78, logicalStateY - 14, 156, 28, 14);
   ctx.fillStyle = "rgba(6,22,27,.86)"; ctx.fill();
   ctx.strokeStyle = "rgba(50,214,173,.5)"; ctx.stroke();
   mono("|ψ⟩  →  |ψ⟩ₗ", centerX, logicalStateY + 4, 11, colors.green, "center");
@@ -662,7 +667,7 @@ function drawLogicalQubitIntro(canvas: HTMLCanvasElement, progress: number) {
     ctx.fillStyle = "rgba(16,35,43,.9)"; ctx.fill();
     ctx.strokeStyle = `${accent}55`; ctx.stroke();
     mono(name, x + 8, y + 15, 7, accent);
-    mono(detail, x + 8, y + 29, 5.8, "rgba(150,174,187,.66)");
+    mono(detail, x + 8, y + 29, 5.8, canvasText.muted);
     ctx.restore();
   });
 
@@ -743,7 +748,7 @@ function drawScalingComparison(canvas: HTMLCanvasElement, progress: number) {
     ctx.fillStyle = accent;
     ctx.font = `600 ${slideTextSize(12)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
     ctx.fillText(name.toUpperCase(), 28, y - 10);
-    ctx.fillStyle = "rgba(174, 197, 216, .58)";
+    ctx.fillStyle = canvasText.muted;
     ctx.font = `500 ${slideTextSize(8)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
     ctx.fillText(detail.toUpperCase(), 28, y + 16);
     ctx.restore();
@@ -796,7 +801,7 @@ function drawScalingComparison(canvas: HTMLCanvasElement, progress: number) {
     ctx.fillStyle = "rgba(229, 241, 249, .9)";
     ctx.font = `600 ${slideTextSize(9)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
     ctx.fillText(title, x, y);
-    ctx.fillStyle = "rgba(137, 161, 181, .7)";
+    ctx.fillStyle = canvasText.muted;
     ctx.font = `500 ${slideTextSize(7)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
     ctx.fillText(detail, x, y + 20);
     ctx.restore();
@@ -1008,7 +1013,7 @@ function drawScalingComparison(canvas: HTMLCanvasElement, progress: number) {
     const y = top + row * (rowHeight + gap) + rowHeight / 2;
     ctx.save();
     ctx.globalAlpha = alpha;
-    ctx.fillStyle = "rgba(130, 153, 173, .66)";
+    ctx.fillStyle = canvasText.muted;
     ctx.font = `500 ${slideTextSize(7)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
     ctx.fillText("PHYSICAL-QUBIT SCALING", formulaX, y - 28);
     ctx.fillStyle = accent;
@@ -1017,7 +1022,7 @@ function drawScalingComparison(canvas: HTMLCanvasElement, progress: number) {
     ctx.font = `500 ${clamp(width * 0.018, 18, 30)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
     ctx.fillText(formula, formulaX, y + 7);
     ctx.shadowBlur = 0;
-    ctx.fillStyle = "rgba(154, 177, 196, .68)";
+    ctx.fillStyle = canvasText.muted;
     ctx.font = `500 ${slideTextSize(8)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
     ctx.fillText(detail, formulaX, y + 38);
     ctx.restore();
@@ -1143,7 +1148,7 @@ function drawGateComplexity(canvas: HTMLCanvasElement, progress: number) {
     ctx.stroke();
     ctx.restore();
   };
-  const mono = (text: string, x: number, y: number, size = 9, color = "rgba(190,211,225,.72)", align: CanvasTextAlign = "left") => {
+  const mono = (text: string, x: number, y: number, size = 9, color = canvasText.muted, align: CanvasTextAlign = "left") => {
     ctx.save();
     ctx.textAlign = align;
     ctx.fillStyle = color;
@@ -1220,7 +1225,7 @@ function drawGateComplexity(canvas: HTMLCanvasElement, progress: number) {
   const drawCssPair = (x: number, name: string, triangular: boolean, accent: string) => {
     panel(x, topY, halfW, topH, accent);
     mono(name.toUpperCase(), x + 16, topY + 20, 9, accent);
-    mono("TWO IDENTICAL CSS BLOCKS", x + 16, topY + 34, 7, "rgba(137,161,181,.58)");
+    mono("TWO IDENTICAL CSS BLOCKS", x + 16, topY + 34, 7, canvasText.muted);
     const cy = topY + topH * 0.57;
     const leftCx = x + halfW * 0.31;
     const rightCx = x + halfW * 0.69;
@@ -1238,8 +1243,8 @@ function drawGateComplexity(canvas: HTMLCanvasElement, progress: number) {
       ctx.beginPath(); ctx.arc(b[i].x, b[i].y, 3.4, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
     }
     ctx.restore();
-    mono("CONTROL", leftCx, topY + topH - 14, 7, "rgba(160,181,197,.58)", "center");
-    mono("TARGET", rightCx, topY + topH - 14, 7, "rgba(160,181,197,.58)", "center");
+    mono("CONTROL", leftCx, topY + topH - 14, 7, canvasText.muted, "center");
+    mono("TARGET", rightCx, topY + topH - 14, 7, canvasText.muted, "center");
     badge("TWO QUBIT LOGICAL CNOT GATE", x + halfW - 12, topY + 20, accent, fire, "right");
   };
 
@@ -1249,7 +1254,7 @@ function drawGateComplexity(canvas: HTMLCanvasElement, progress: number) {
   panel(inset, bottomY, width - inset * 2, bottomH, colors.green);
   ctx.save(); ctx.globalAlpha = bbReveal;
   mono("BIVARIATE BICYCLE · SELECTED LOGICAL CNOT", inset + 16, bottomY + 21, 9, colors.green);
-  mono("12 LOGICAL QUBITS SHARE EACH DENSE CODE BLOCK", inset + 16, bottomY + 35, 7, "rgba(137,161,181,.58)");
+  mono("12 LOGICAL QUBITS SHARE EACH DENSE CODE BLOCK", inset + 16, bottomY + 35, 7, canvasText.muted);
 
   const moduleW = clamp(width * 0.115, 116, 166);
   const moduleH = clamp(bottomH * 0.58, 86, 126);
@@ -1260,7 +1265,7 @@ function drawGateComplexity(canvas: HTMLCanvasElement, progress: number) {
     roundRect(x, y, moduleW, moduleH, 12);
     ctx.fillStyle = "rgba(14,43,42,.72)"; ctx.fill();
     ctx.strokeStyle = "rgba(50,214,173,.32)"; ctx.stroke();
-    mono(label, cx, y - 8, 7, "rgba(146,180,178,.7)", "center");
+    mono(label, cx, y - 8, 7, canvasText.muted, "center");
     for (let i = 0; i < 12; i++) {
       const col = i % 6, row = Math.floor(i / 6);
       const px = x + 15 + col * (moduleW - 30) / 5;
@@ -1268,7 +1273,7 @@ function drawGateComplexity(canvas: HTMLCanvasElement, progress: number) {
       ctx.strokeStyle = i + 1 === target ? colors.amber : "rgba(108,176,164,.28)";
       ctx.fillStyle = i + 1 === target ? `rgba(255,189,102,${0.4 + pulse * 0.25})` : "rgba(24,72,67,.72)";
       ctx.beginPath(); ctx.arc(px, py, i + 1 === target ? 7 : 5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-      mono(String(i + 1), px, py + 2.3, 5.5, i + 1 === target ? "#fff1d4" : "rgba(189,220,213,.72)", "center");
+      mono(String(i + 1), px, py + 2.3, 5.5, i + 1 === target ? "#fff1d4" : canvasText.muted, "center");
     }
     return { x, y, cx };
   };
@@ -1297,14 +1302,13 @@ function drawGateComplexity(canvas: HTMLCanvasElement, progress: number) {
     ctx.strokeStyle = i === 2 ? "rgba(50,214,173,.48)" : "rgba(133,161,181,.2)"; ctx.stroke();
     mono(num, x + 9, cardY + 14, 6.5, i === 2 ? colors.green : "rgba(109,243,255,.55)");
     mono(title, x + 9, cardY + 29, 7.5, "rgba(229,241,249,.88)");
-    mono(detail, x + 9, cardY + 43, 5.8, "rgba(148,171,187,.65)");
+    mono(detail, x + 9, cardY + 43, 5.8, canvasText.muted);
     if (i < cards.length - 1) {
       ctx.strokeStyle = "rgba(109,243,255,.35)";
       ctx.beginPath(); ctx.moveTo(x + cardW, cardY + 28); ctx.lineTo(x + cardW + cardGap, cardY + 28); ctx.stroke();
     }
     ctx.restore();
   });
-  badge("CONTROL OVERHEAD, NOT ENCODING OVERHEAD", width / 2, bottomY + bottomH - 17, colors.amber, compile);
 }
 
 function phaseForStep(step: number) {
@@ -1550,7 +1554,7 @@ function drawShift(canvas: HTMLCanvasElement, step: number) {
   ctx.save();
   ctx.strokeStyle = "rgba(142, 175, 202, .26)";
   ctx.strokeRect(padX - 8, padY - 8, areaW + 16, areaH + 16);
-  ctx.fillStyle = "rgba(186, 211, 231, .56)";
+  ctx.fillStyle = canvasText.muted;
   ctx.font = `500 ${slideTextSize(9)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
   ctx.fillText("TORIC MODULE · 12 × 6 UNIT CELLS · 288 PHYSICAL SITES", padX, padY - 17);
   ctx.restore();
@@ -1809,7 +1813,7 @@ function drawAodShift(canvas: HTMLCanvasElement, progress: number) {
   ctx.save();
   ctx.strokeStyle = "rgba(132, 188, 174, .34)";
   ctx.strokeRect(padX - 9, padTop - 9, areaW + 18, areaH + 18);
-  ctx.fillStyle = "rgba(194, 230, 220, .64)";
+  ctx.fillStyle = canvasText.muted;
   ctx.font = `500 ${slideTextSize(9)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
   ctx.fillText("SLM STORAGE LATTICE · 144 DATA ATOMS", padX, padTop - 48);
   ctx.textAlign = "right";
@@ -1857,7 +1861,7 @@ function drawParallelAodLegacy(canvas: HTMLCanvasElement, progress: number) {
   const pulse = 0.36 + 0.2 * Math.sin(performance.now() / 175);
 
   ctx.save();
-  ctx.fillStyle = "rgba(192, 224, 214, .56)";
+  ctx.fillStyle = canvasText.muted;
   ctx.font = `500 ${slideTextSize(9)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
   ctx.fillText("ONE COMPUTE COLUMN · SHARED +X / +Y AOD DIRECTIONS", padX, top - 13);
   ctx.restore();
@@ -1982,7 +1986,7 @@ function drawParallelAodLegacy(canvas: HTMLCanvasElement, progress: number) {
     ctx.fillStyle = module.color;
     ctx.textAlign = "right";
     ctx.fillText(`${module.name}  δ=(+${module.dx},+${module.dy})`, frameX - 17, frameY + 18);
-    ctx.fillStyle = dropT >= 1 ? colors.green : "rgba(177, 202, 220, .6)";
+    ctx.fillStyle = dropT >= 1 ? colors.green : canvasText.muted;
     ctx.font = `500 ${slideTextSize(8)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
     ctx.fillText(status, frameX - 17, frameY + 40);
     ctx.restore();
@@ -2028,7 +2032,7 @@ function drawParallelAod(canvas: HTMLCanvasElement, progress: number) {
   const radius = clamp(Math.min(cellW, cellH) * 0.14, 1.8, 4.2);
 
   ctx.save();
-  ctx.fillStyle = "rgba(192, 224, 214, .66)";
+  ctx.fillStyle = canvasText.muted;
   ctx.font = `500 ${slideTextSize(9)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
   ctx.fillText("SHARED AOD DIRECTIONS · TRUE WRAP DISTANCES · STAGGERED DROP-OFF", stageX, top - 15);
   ctx.restore();
@@ -2215,7 +2219,7 @@ function drawParallelAod(canvas: HTMLCanvasElement, progress: number) {
     ctx.fillStyle = module.color;
     ctx.font = `600 ${slideTextSize(10)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
     ctx.fillText(`${module.name}  δ=(+${module.dx},+${module.dy})`, stageX - 18, frameY + 22);
-    ctx.fillStyle = dropped ? colors.green : "rgba(185, 211, 226, .72)";
+    ctx.fillStyle = dropped ? colors.green : canvasText.muted;
     ctx.font = `500 ${slideTextSize(8)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
     ctx.fillText(status, stageX - 18, frameY + 46);
     ctx.restore();
@@ -2291,7 +2295,7 @@ function drawPlacementOrdering(canvas: HTMLCanvasElement, progress: number) {
     x: number,
     y: number,
     size = 8,
-    color = "rgba(176,201,219,.68)",
+    color = canvasText.muted,
     align: CanvasTextAlign = "left",
   ) => {
     ctx.save();
@@ -2311,7 +2315,7 @@ function drawPlacementOrdering(canvas: HTMLCanvasElement, progress: number) {
   ctx.restore();
 
   mono("THE PLACEMENT PROBLEM", leftX + 20, panelY + 29, 10, spectralT > 0.55 ? colors.green : colors.amber);
-  mono("SAME BB MODULES · DIFFERENT PHYSICAL ORDER", leftX + 20, panelY + 52, 7, "rgba(137,161,181,.58)");
+  mono("SAME BB MODULES · DIFFERENT PHYSICAL ORDER", leftX + 20, panelY + 52, 7, canvasText.muted);
   ctx.save();
   roundRect(leftX + leftW - 175, panelY + 17, 154, 31, 8);
   ctx.fillStyle = spectralT > 0.5 ? "rgba(50,214,173,.09)" : "rgba(255,189,102,.08)";
@@ -2337,7 +2341,7 @@ function drawPlacementOrdering(canvas: HTMLCanvasElement, progress: number) {
     ctx.strokeStyle = spectralT > 0.4 ? "rgba(50,214,173,.16)" : "rgba(117,151,176,.14)";
     ctx.stroke();
     ctx.restore();
-    mono(`COMPUTE COLUMN ${col + 1}`, x + columnW / 2, graphTop + 5, 6.3, "rgba(130,157,178,.5)", "center");
+    mono(`COMPUTE COLUMN ${col + 1}`, x + columnW / 2, graphTop + 5, 6.3, canvasText.muted, "center");
   }
 
   const longMidpoints: Point[] = [];
@@ -2393,7 +2397,7 @@ function drawPlacementOrdering(canvas: HTMLCanvasElement, progress: number) {
     ctx.stroke();
     ctx.restore();
     mono(`M${moduleIndex}`, point.x, point.y + 3, 8.5, accent, "center");
-    mono(`12L · 288P`, point.x, point.y + 15, 5.5, "rgba(146,173,193,.54)", "center");
+    mono(`12L · 288P`, point.x, point.y + 15, 5.5, canvasText.muted, "center");
   }
 
   if (spectralT > 0.35) {
@@ -2425,7 +2429,7 @@ function drawPlacementOrdering(canvas: HTMLCanvasElement, progress: number) {
     ctx.strokeStyle = spectralT > 0.4 ? "rgba(50,214,173,.2)" : "rgba(255,189,102,.16)";
     ctx.stroke();
     ctx.restore();
-    mono(label, x + 10, metricY + 20, 5.8, "rgba(134,161,181,.62)");
+    mono(label, x + 10, metricY + 20, 5.8, canvasText.muted);
     const digits = index === 0 ? value.toFixed(0) : index === 1 ? value.toFixed(1) : value.toFixed(0);
     mono(`${digits}${suffix}`, x + 10, metricY + 48, 15, spectralT > 0.4 ? colors.green : colors.amber);
     if (spectralT > 0.55) {
@@ -2445,7 +2449,7 @@ function drawPlacementOrdering(canvas: HTMLCanvasElement, progress: number) {
   ctx.stroke();
   ctx.restore();
   mono("PARK-N-RIDE RESULTS", rightX + 20, panelY + 29, 10, colors.green);
-  mono("SPECTRAL PLACEMENT WINS ACROSS BOTH SCALING AXES", rightX + 20, panelY + 52, 7, "rgba(137,161,181,.58)");
+  mono("SPECTRAL PLACEMENT WINS ACROSS BOTH SCALING AXES", rightX + 20, panelY + 52, 7, canvasText.muted);
 }
 
 function placementPhase(progress: number) {
@@ -2518,7 +2522,7 @@ function drawConclusionArchitecture(canvas: HTMLCanvasElement, _progress: number
     x: number,
     y: number,
     size = 8,
-    color = "rgba(179,204,222,.68)",
+    color = canvasText.muted,
     align: CanvasTextAlign = "left",
   ) => {
     ctx.save();
@@ -2580,7 +2584,7 @@ function drawConclusionArchitecture(canvas: HTMLCanvasElement, _progress: number
   ctx.stroke();
   ctx.restore();
   mono("PARK-N-RIDE · COMPLETE ZONED ARCHITECTURE", outerX + 20, panelY + 25, 9.5, colors.green);
-  mono("STATIC OVERVIEW", outerX + outerW - 20, panelY + 25, 6.8, "rgba(139,166,185,.58)", "right");
+  mono("STATIC OVERVIEW", outerX + outerW - 20, panelY + 25, 6.8, canvasText.muted, "right");
 
   // Global measurement/readout layer spans every compute column.
   ctx.save();

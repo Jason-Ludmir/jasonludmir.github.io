@@ -1076,11 +1076,12 @@ footer p:last-child {
 }
 
 .present-title p {
-  margin-bottom: 6px;
+  margin-bottom: 8px;
   color: var(--cyan);
   font-family: var(--font-geist-mono), ui-monospace, monospace;
-  font-size: 9px;
-  letter-spacing: 0.12em;
+  font-size: clamp(14px, 0.95vw, 18px);
+  font-weight: 650;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
@@ -1117,7 +1118,7 @@ footer p:last-child {
   border: 1px solid transparent;
   border-radius: 7px;
   background: transparent;
-  color: #657b8e;
+  color: #aec2d2;
   font-family: var(--font-geist-mono), ui-monospace, monospace;
   font-size: 8px;
   cursor: pointer;
@@ -1125,11 +1126,13 @@ footer p:last-child {
 }
 
 .deck-tabs button span {
-  color: #4e6577;
+  color: #abc0d0;
+  font-size: 16px;
+  font-weight: 650;
 }
 
 .deck-tabs button:hover {
-  color: #9db1c2;
+  color: #d5e4ee;
   border-color: rgba(154, 184, 208, 0.15);
 }
 
@@ -1178,7 +1181,7 @@ footer p:last-child {
 }
 
 .present-phase small {
-  color: #7f94a7;
+  color: #b8cad8;
   font-size: 10px;
 }
 
@@ -1209,7 +1212,7 @@ footer p:last-child {
 .present-costs article > span {
   grid-column: 1 / -1;
   align-self: start;
-  color: #758b9e;
+  color: #bdd0de;
   font-family: var(--font-geist-mono), ui-monospace, monospace;
   font-size: 8px;
   letter-spacing: 0.1em;
@@ -1228,7 +1231,7 @@ footer p:last-child {
 .present-costs article > small {
   align-self: end;
   padding-bottom: 2px;
-  color: #637a8d;
+  color: #adc3d3;
   font-size: 9px;
 }
 
@@ -1379,7 +1382,7 @@ footer p:last-child {
 }
 
 .placement-takeaway span {
-  color: rgba(209, 242, 232, 0.76);
+  color: rgba(230, 248, 242, 0.92);
   font-family: var(--font-geist-mono), ui-monospace, monospace;
   font-size: 12px;
   line-height: 1.45;
@@ -1431,7 +1434,7 @@ footer p:last-child {
 
 .conclusion-takeaways article > small {
   margin-top: 7px;
-  color: rgba(157, 190, 182, 0.68);
+  color: rgba(207, 230, 224, 0.88);
   font-family: var(--font-geist-mono), ui-monospace, monospace;
   font-size: 10.5px;
   line-height: 1.42;
@@ -1610,7 +1613,7 @@ footer p:last-child {
 
 .title-controls p {
   margin: 0;
-  color: #9ab3c9;
+  color: #c5d5e2;
   font-family: var(--font-geist-mono), ui-monospace, monospace;
   font-size: 10px;
   letter-spacing: 0.09em;
@@ -1646,7 +1649,7 @@ footer p:last-child {
   bottom: 13px;
   flex-wrap: wrap;
   gap: 12px;
-  color: #849aac;
+  color: #bfd0dc;
   font-size: 13px;
 }
 
@@ -1801,7 +1804,7 @@ footer p:last-child {
   height: 39px;
   padding: 0 12px;
   border-radius: 7px;
-  color: #8499aa;
+  color: #bfd0dc;
   font-size: 9px;
 }
 
@@ -1811,7 +1814,7 @@ footer p:last-child {
   border: 1px solid rgba(149, 179, 203, 0.2);
   border-radius: 3px;
   font-family: var(--font-geist-mono), ui-monospace, monospace;
-  color: #a8bac9;
+  color: #d1dee8;
 }
 
 .present-note {
@@ -1819,7 +1822,7 @@ footer p:last-child {
   right: clamp(24px, 3.2vw, 60px);
   top: -17px;
   margin: 0;
-  color: #52697b;
+  color: #a9bfce;
   font-family: var(--font-geist-mono), ui-monospace, monospace;
   font-size: 7px;
   letter-spacing: 0.07em;
@@ -1917,7 +1920,7 @@ footer p:last-child {
 
 @media (max-width: 2050px) {
   .deck-tabs button {
-    width: 34px;
+    width: 48px;
     justify-content: center;
     overflow: hidden;
     white-space: nowrap;
@@ -1926,7 +1929,7 @@ footer p:last-child {
 
   .deck-tabs button span {
     flex: 0 0 auto;
-    font-size: 8px;
+    font-size: 16px;
   }
 
   .present-phase {
@@ -1984,7 +1987,7 @@ footer p:last-child {
   }
 
   .present-title p {
-    font-size: 7px;
+    font-size: 12px;
   }
 
   .deck-tabs {
