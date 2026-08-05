@@ -1670,6 +1670,10 @@ footer p:last-child {
   font-size: 17px;
 }
 
+.screen-8 .present-legend {
+  bottom: 0;
+}
+
 .present-legend span {
   display: flex;
   align-items: center;

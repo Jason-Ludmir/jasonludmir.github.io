@@ -1689,12 +1689,12 @@ function drawAodShift(canvas: HTMLCanvasElement, progress: number) {
     ctx.strokeStyle = "rgba(109, 243, 255, .055)";
     ctx.lineWidth = 0.7;
     ctx.beginPath();
-    ctx.moveTo(x, padTop - 34);
-    ctx.lineTo(x, padTop + areaH + 7);
+    ctx.moveTo(x, padTop + 8);
+    ctx.lineTo(x, padTop + areaH - 7);
     ctx.stroke();
     ctx.fillStyle = "rgba(109, 243, 255, .22)";
     ctx.beginPath();
-    ctx.arc(x, padTop - 38, 2, 0, Math.PI * 2);
+    ctx.arc(x, padTop + 4, 2, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
   }
@@ -1712,12 +1712,12 @@ function drawAodShift(canvas: HTMLCanvasElement, progress: number) {
       ctx.shadowColor = colors.cyan;
       ctx.shadowBlur = 9;
       ctx.beginPath();
-      ctx.moveTo(x, padTop - 34 + yOffset);
-      ctx.lineTo(x, padTop + areaH + 7 + yOffset);
+      ctx.moveTo(x, padTop + 8);
+      ctx.lineTo(x, padTop + areaH - 7 + yOffset);
       ctx.stroke();
       ctx.fillStyle = colors.cyan;
       ctx.beginPath();
-      ctx.arc(x, padTop - 38 + yOffset, 3.3, 0, Math.PI * 2);
+      ctx.arc(x, padTop + 4, 3.3, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
     }
@@ -1729,7 +1729,7 @@ function drawAodShift(canvas: HTMLCanvasElement, progress: number) {
     );
     ctx.save();
     ctx.fillStyle = `rgba(109, 243, 255, ${0.05 + pulse * 0.07})`;
-    ctx.fillRect(stripX, padTop - lift, shiftColumns * cellW, areaH);
+    ctx.fillRect(stripX, padTop, shiftColumns * cellW, areaH);
     ctx.restore();
   }
   if (verticalActive) {
@@ -2038,11 +2038,14 @@ function drawParallelAod(canvas: HTMLCanvasElement, progress: number) {
   const cellW = stageW / (COLS + maxDx);
   const cellH = (moduleH - 10) / (ROWS + maxDy);
   const radius = clamp(Math.min(cellW, cellH) * 0.14, 1.8, 4.2);
+  const sharedGridX = stageX + maxDx * cellW;
+  const sharedBeamTop = top + 5;
+  const sharedBeamBottom = top + 2 * (moduleH + gap) + 5 + ROWS * cellH;
 
   ctx.save();
   ctx.fillStyle = canvasText.muted;
   ctx.font = `500 ${slideTextSize(9)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
-  ctx.fillText("SHARED AOD DIRECTIONS · TRUE WRAP DISTANCES · STAGGERED DROP-OFF", stageX, top - 15);
+  ctx.fillText("SHARED AOD COLUMNS SPAN THE COMPUTE COLUMN · TRUE WRAP DISTANCES · STAGGERED DROP-OFF", stageX, top - 15);
   ctx.restore();
 
   modules.forEach((module, index) => {
@@ -2111,25 +2114,6 @@ function drawParallelAod(canvas: HTMLCanvasElement, progress: number) {
     }
     ctx.restore();
 
-    // Selected AOD columns wrap left together across every module.
-    if (phase < 1.4) {
-      for (let c = COLS - module.dx; c < COLS; c++) {
-        const columnPosition = mix(c, c - COLS, rollX);
-        const beamX = gridX + (columnPosition + 0.5) * cellW;
-        const lift = Math.sin(rollX * Math.PI) * Math.min(24, cellH * 0.75);
-        ctx.save();
-        ctx.strokeStyle = `rgba(109, 243, 255, ${pulse})`;
-        ctx.lineWidth = 1.2;
-        ctx.shadowColor = colors.cyan;
-        ctx.shadowBlur = 7;
-        ctx.beginPath();
-        ctx.moveTo(beamX, gridY - lift);
-        ctx.lineTo(beamX, gridY + torusH - lift);
-        ctx.stroke();
-        ctx.restore();
-      }
-    }
-
     // Selected AOD rows wrap down together after the horizontal roll.
     if (phase >= 1.4 && phase < 2.65) {
       for (let r = 0; r < module.dy; r++) {
@@ -2144,23 +2128,6 @@ function drawParallelAod(canvas: HTMLCanvasElement, progress: number) {
         ctx.beginPath();
         ctx.moveTo(gridX - module.dx * cellW + bow, railY);
         ctx.lineTo(gridX + (COLS - module.dx) * cellW + bow, railY);
-        ctx.stroke();
-        ctx.restore();
-      }
-    }
-
-    // During resync every occupied column remains captured. All active modules
-    // translate in the same right/up directions and drop as soon as aligned.
-    if (phase >= 2.65 && !dropped) {
-      for (let c = 0; c < COLS; c++) {
-        const shiftedColumn = c >= COLS - module.dx ? c - COLS : c;
-        const beamX = gridX + (shiftedColumn + 0.5) * cellW + resyncX;
-        ctx.save();
-        ctx.strokeStyle = `rgba(109, 243, 255, ${0.18 + pulse * 0.45})`;
-        ctx.lineWidth = 0.9;
-        ctx.beginPath();
-        ctx.moveTo(beamX, gridY + module.dy * cellH + resyncY);
-        ctx.lineTo(beamX, gridY + (ROWS + module.dy) * cellH + resyncY);
         ctx.stroke();
         ctx.restore();
       }
@@ -2232,6 +2199,46 @@ function drawParallelAod(canvas: HTMLCanvasElement, progress: number) {
     ctx.fillText(status, stageX - 18, frameY + 46);
     ctx.restore();
   });
+
+  // One physical AOD column set spans the entire compute column. Individual
+  // modules populate different traps on those shared beams, then release as
+  // soon as their own offset reaches the SLM lattice.
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(stageX - 8, sharedBeamTop - 4, stageW + 16, sharedBeamBottom - sharedBeamTop + 8);
+  ctx.clip();
+  ctx.strokeStyle = `rgba(109, 243, 255, ${0.2 + pulse * 0.58})`;
+  ctx.lineWidth = 1.25;
+  ctx.shadowColor = colors.cyan;
+  ctx.shadowBlur = 8;
+
+  if (phase < 2.82) {
+    const lift = phase < 1.4
+      ? Math.sin(rollX * Math.PI) * Math.min(24, cellH * 0.75)
+      : 0;
+    for (let beam = 0; beam < maxDx; beam++) {
+      const startColumn = COLS - maxDx + beam;
+      const stagedColumn = -maxDx + beam;
+      const columnPosition = phase < 1.4
+        ? mix(startColumn, stagedColumn, rollX)
+        : stagedColumn;
+      const beamX = sharedGridX + (columnPosition + 0.5) * cellW;
+      ctx.beginPath();
+      ctx.moveTo(beamX, sharedBeamTop - lift);
+      ctx.lineTo(beamX, sharedBeamBottom - lift);
+      ctx.stroke();
+    }
+  } else if (resyncSweep < 1) {
+    const commonOffset = resyncSweep * maxDx;
+    for (let column = -maxDx; column < COLS - 1; column++) {
+      const beamX = sharedGridX + (column + 0.5 + commonOffset) * cellW;
+      ctx.beginPath();
+      ctx.moveTo(beamX, sharedBeamTop);
+      ctx.lineTo(beamX, sharedBeamBottom);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
 }
 
 function drawPlacementOrdering(canvas: HTMLCanvasElement, progress: number) {
