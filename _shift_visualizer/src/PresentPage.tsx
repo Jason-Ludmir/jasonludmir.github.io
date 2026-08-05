@@ -13,7 +13,7 @@ const SLIDE_STOPS = [
   [0, 0.42, 0.68, 1],
   [0, 0.46, 0.7, 1],
   [0, 0.42, 0.68, 1],
-  [0, 0.22, 0.42, 0.62, 0.94],
+  [0, 0.32, 0.58, 0.94],
   [0, 2 / 6, 3 / 6, 5 / 6, 1],
   [0, 0.34, 0.64, 0.92],
   [0, 0.28, 0.53, 0.918],
@@ -189,12 +189,14 @@ function drawConnectivityIntro(canvas: HTMLCanvasElement, progress: number) {
 
   const drawMovingSystem = (boxX: number, boxY: number, boxW: number, boxH: number, physical: boolean) => {
     const centerY = boxY + boxH / 2 + 7;
-    const rowGap = clamp(boxH * 0.22, 28, 43);
+    const rowGap = clamp(boxH * 0.24, 42, 52);
+    const rydbergRadius = 20;
+    const interactionOffset = rydbergRadius * 1.7;
     const baseX = boxX + boxW * 0.2;
     const middleX = boxX + boxW * 0.52;
     const rightColumnX = boxX + boxW * 0.8;
-    const middleMeetX = middleX - clamp(boxW * 0.1, 38, 52);
-    const rightMeetX = rightColumnX - clamp(boxW * 0.1, 38, 52);
+    const middleMeetX = middleX - interactionOffset;
+    const rightMeetX = rightColumnX - interactionOffset;
     const topMovingX = progress <= 0.28
       ? mix(baseX, middleMeetX, middleT)
       : mix(middleMeetX, rightMeetX, rightT);
@@ -217,12 +219,6 @@ function drawConnectivityIntro(canvas: HTMLCanvasElement, progress: number) {
       progress <= 0.28 || row === 2 ? 0 : rightT;
 
     if (!physical) {
-      for (let r = 0; r < 2; r++) {
-        const movingColumnStrength = r === 0 ? 1 : 1 - rightT;
-        edge(moving[r], moving[r + 1], "rgba(109,243,255,.35)", movingColumnStrength);
-        edge(middle[r], middle[r + 1], "rgba(50,214,173,.35)");
-        edge(right[r], right[r + 1], "rgba(50,214,173,.35)");
-      }
       for (let r = 0; r < 3; r++) {
         edge(moving[r], middle[r], colors.cyan, middleStrengthForRow(r), 2.2);
         edge(moving[r], right[r], colors.violet, rightStrengthForRow(r), 2.2);
@@ -247,15 +243,31 @@ function drawConnectivityIntro(canvas: HTMLCanvasElement, progress: number) {
       drawAodRail(topMovingX, moving[0].y - 19, moving[1].y + 19, rightT);
       drawAodRail(bottomMovingX, moving[2].y - 19, moving[2].y + 19, rightT);
       [...middle, ...right].forEach((p) => {
-        ctx.fillStyle = "rgba(50,214,173,.12)"; ctx.beginPath(); ctx.arc(p.x, p.y, 18, 0, Math.PI * 2); ctx.fill();
+        ctx.save();
+        ctx.fillStyle = "rgba(50,214,173,.1)";
+        ctx.strokeStyle = "rgba(50,214,173,.25)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, rydbergRadius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
       });
       moving.forEach((p, row) => {
         const middleStrength = middleStrengthForRow(row);
         const rightStrength = rightStrengthForRow(row);
         const interaction = Math.max(middleStrength, rightStrength);
-        ctx.save(); ctx.globalAlpha = interaction * 0.35;
-        ctx.fillStyle = rightStrength > middleStrength ? colors.violet : colors.cyan;
-        ctx.beginPath(); ctx.arc(p.x, p.y, 20, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+        const interactionColor = rightStrength > middleStrength ? colors.violet : colors.cyan;
+        ctx.save();
+        ctx.globalAlpha = interaction * 0.38;
+        ctx.fillStyle = interactionColor;
+        ctx.strokeStyle = interactionColor;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, rydbergRadius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
       });
     }
 
@@ -1062,21 +1074,21 @@ function drawScalingComparison(canvas: HTMLCanvasElement, progress: number) {
 }
 
 function gateComplexityPhase(progress: number) {
-  if (progress < 0.22) {
+  if (progress <= 0.001) {
     return {
       number: "01",
-      label: "Align identical code blocks",
-      description: "Matching physical qubits in two CSS blocks are paired for a logical CNOT.",
+      label: "Begin with two encoded qubits",
+      description: "Both logical qubits are already present in each conventional-code comparison.",
     };
   }
-  if (progress < 0.48) {
+  if (progress <= 0.321) {
     return {
       number: "02",
-      label: "Fire one bitwise layer",
+      label: "Execute the logical CNOT",
       description: "Every physical CNOT executes in parallel when pairwise connectivity exists.",
     };
   }
-  if (progress < 0.7) {
+  if (progress <= 0.581) {
     return {
       number: "03",
       label: "Select two BB logical qubits",
@@ -1112,10 +1124,9 @@ function drawGateComplexity(canvas: HTMLCanvasElement, progress: number) {
   const topH = height * 0.38;
   const bottomY = topY + topH + 12;
   const bottomH = height - bottomY - 12;
-  const pairReveal = ease((progress - 0.04) / 0.18);
-  const fire = ease((progress - 0.22) / 0.2);
-  const bbReveal = ease((progress - 0.44) / 0.18);
-  const compile = ease((progress - 0.66) / 0.28);
+  const fire = ease(progress / 0.32);
+  const bbReveal = ease((progress - 0.32) / 0.26);
+  const compile = ease((progress - 0.58) / 0.36);
   const pulse = 0.65 + 0.35 * Math.sin(performance.now() / 220);
 
   const roundRect = (x: number, y: number, w: number, h: number, r = 12) => {
@@ -1140,19 +1151,27 @@ function drawGateComplexity(canvas: HTMLCanvasElement, progress: number) {
     ctx.fillText(text, x, y);
     ctx.restore();
   };
-  const badge = (text: string, x: number, y: number, accent: string, alpha = 1) => {
+  const badge = (
+    text: string,
+    x: number,
+    y: number,
+    accent: string,
+    alpha = 1,
+    align: "center" | "right" = "center",
+  ) => {
     ctx.save();
     ctx.globalAlpha = alpha;
     ctx.font = `600 ${slideTextSize(8)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
     const w = ctx.measureText(text).width + 18;
-    roundRect(x - w / 2, y - 10, w, 20, 10);
+    const badgeX = align === "right" ? x - w : x - w / 2;
+    roundRect(badgeX, y - 10, w, 20, 10);
     ctx.fillStyle = `${accent}18`;
     ctx.fill();
     ctx.strokeStyle = `${accent}66`;
     ctx.stroke();
     ctx.fillStyle = accent;
-    ctx.textAlign = "center";
-    ctx.fillText(text, x, y + 3);
+    ctx.textAlign = align;
+    ctx.fillText(text, align === "right" ? x - 9 : x, y + 3);
     ctx.restore();
   };
 
@@ -1206,7 +1225,7 @@ function drawGateComplexity(canvas: HTMLCanvasElement, progress: number) {
     const leftCx = x + halfW * 0.31;
     const rightCx = x + halfW * 0.69;
     const a = drawGridBlock(leftCx, cy, triangular, accent, 1);
-    const b = drawGridBlock(rightCx, cy, triangular, accent, pairReveal);
+    const b = drawGridBlock(rightCx, cy, triangular, accent, 1);
     const count = Math.min(a.length, b.length);
     ctx.save();
     ctx.globalAlpha = fire;
@@ -1221,7 +1240,7 @@ function drawGateComplexity(canvas: HTMLCanvasElement, progress: number) {
     ctx.restore();
     mono("CONTROL", leftCx, topY + topH - 14, 7, "rgba(160,181,197,.58)", "center");
     mono("TARGET", rightCx, topY + topH - 14, 7, "rgba(160,181,197,.58)", "center");
-    badge("BITWISE CNOT · DEPTH 1*", x + halfW / 2, topY + 20, accent, fire);
+    badge("TWO QUBIT LOGICAL CNOT GATE", x + halfW - 12, topY + 20, accent, fire, "right");
   };
 
   drawCssPair(inset, "Surface code", false, colors.blue);
@@ -3066,7 +3085,7 @@ export default function PresentPage() {
       kicker: "Logical gates",
       title: "Fewer qubits. Harder logical control",
       primaryLabel: "Direct physical gate layers",
-      primaryValue: progress < 0.48 ? "1" : "→ protocol",
+      primaryValue: progress < 0.58 ? "1" : "→ protocol",
       primaryNote: "bitwise CSS → BB instruction stack",
       costs: [
         ["CSS blockwise CNOT", "depth 1*", "pairwise connectivity"],
@@ -3074,7 +3093,7 @@ export default function PresentPage() {
         ["BB logical measurement", "120 / 216", "gross / two-gross timesteps"],
         ["Arbitrary Pauli synthesis", "≈18.5", "bicycle measurements · mean"],
       ],
-      timeline: ["Align blocks", "Bitwise CNOT", "Select BB qubits", "Compile + surgery"],
+      timeline: ["Two CSS blocks", "Logical CNOT", "Select BB qubits", "Compile + surgery"],
       note: "*Blockwise transversal CNOT assumes matching pairwise couplers · BB costs from Tour de Gross Tables 2 and Fig. 9",
     },
     {
