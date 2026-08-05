@@ -2768,8 +2768,8 @@ function drawConclusionArchitecture(canvas: HTMLCanvasElement, _progress: number
   const measurementY = panelY + 37;
   const measurementH = clamp(panelH * 0.11, 47, 59);
   const entanglementY = measurementY + measurementH + 10;
-  const entanglementH = 27;
-  const computeY = entanglementY + entanglementH + 9;
+  const entanglementH = 36;
+  const computeY = entanglementY + entanglementH + 28;
   const computeH = panelY + panelH - computeY - 13;
   const colGap = clamp(outerW * 0.022, 22, 34);
   const colW = (outerW - colGap) / 2;
@@ -2846,8 +2846,7 @@ function drawConclusionArchitecture(canvas: HTMLCanvasElement, _progress: number
   ctx.strokeStyle = "rgba(50,214,173,.23)";
   ctx.stroke();
   ctx.restore();
-  mono("PARK-N-RIDE · COMPLETE ZONED ARCHITECTURE", outerX + 20, panelY + 25, 9.5, colors.green);
-  mono("STATIC OVERVIEW", outerX + outerW - 20, panelY + 25, 6.8, canvasText.muted, "right");
+  mono("COMPLETE ZONED ARCHITECTURE", outerX + 20, panelY + 25, 9.5, colors.green);
 
   // Global measurement/readout layer spans every compute column.
   ctx.save();
@@ -2878,7 +2877,7 @@ function drawConclusionArchitecture(canvas: HTMLCanvasElement, _progress: number
   ctx.strokeStyle = "rgba(174,116,255,.28)";
   ctx.stroke();
   ctx.restore();
-  mono("SHARED ENTANGLEMENT ZONE · BRIDGE BELL PAIRS ACROSS COMPUTE COLUMNS", outerX + outerW / 2, entanglementY + 18, 6.4, colors.violet, "center");
+  mono("SHARED ENTANGLEMENT ZONE · BRIDGE BELL PAIRS ACROSS COMPUTE COLUMNS", outerX + outerW / 2, entanglementY + 23, 6.4, colors.violet, "center");
 
   const drawComputeColumn = (columnIndex: number) => {
     const colX = outerX + columnIndex * (colW + colGap);
@@ -2893,7 +2892,7 @@ function drawConclusionArchitecture(canvas: HTMLCanvasElement, _progress: number
     const factoryY = computeY + zoneH + 8;
 
     ctx.save();
-    roundRect(colX, computeY - 21, colW, computeH + 21, 12);
+    roundRect(colX, computeY - 24, colW, computeH + 24, 12);
     ctx.fillStyle = "rgba(9,26,38,.54)";
     ctx.fill();
     ctx.strokeStyle = "rgba(111,158,190,.2)";
@@ -2995,8 +2994,8 @@ function drawConclusionArchitecture(canvas: HTMLCanvasElement, _progress: number
 function conclusionPhase(_progress: number) {
   return {
     number: "END",
-    label: "Complete Park-n-Ride architecture",
-    description: "A static overview of compute, interaction, measurement, and per-column T-state factory zones.",
+    label: "Complete zoned architecture",
+    description: "An end-to-end view of compute, interaction, measurement, and per-column T-state factory zones.",
   };
 }
 
@@ -3389,7 +3388,7 @@ export default function PresentPage() {
     },
     {
       kicker: "Fixed-coupler shift",
-      title: "One global shift, in physical gates",
+      title: "Superconducting BB Modules",
       primaryLabel: "Two-qubit gates executed",
       primaryValue: cnotCount.toLocaleString(),
       primaryNote: "/ 576 CNOTs",
@@ -3403,8 +3402,8 @@ export default function PresentPage() {
       note: "Shift network only · syndrome cycle intentionally excluded",
     },
     {
-      kicker: "Park ’n Ride",
-      title: "The same shift becomes atom transport",
+      kicker: "Neutral Atom BB Modules",
+      title: "Our Neutral Atom Shift Automorphisms",
       primaryLabel: "Two-qubit gates executed",
       primaryValue: "0",
       primaryNote: "/ 576 avoided",
@@ -3418,8 +3417,8 @@ export default function PresentPage() {
       note: "Park-n-Ride Sec. IV-D · shift cost moves to transport and trap switching",
     },
     {
-      kicker: "Park ’n Ride",
-      title: "Different shifts execute at the same time",
+      kicker: "Large Scale NA BB Operations",
+      title: "Different shifts execute in Parallel",
       primaryLabel: "Shift automorphisms in flight",
       primaryValue: progress >= 1 ? "3" : progress > 0.04 ? "3" : "0",
       primaryNote: "/ 3 concurrent",
@@ -3433,8 +3432,8 @@ export default function PresentPage() {
       note: "Shared directions preserve AOD ordering · modules drop as they align",
     },
     {
-      kicker: "Static module placement",
-      title: "Where modules sit determines how far bridges move",
+      kicker: "Module Placement",
+      title: "Module location impacts circuit runtime",
       primaryLabel: "Placement strategy",
       primaryValue: "spectral",
       primaryNote: "weighted interaction graph → compute columns",
@@ -3448,7 +3447,7 @@ export default function PresentPage() {
     },
     {
       kicker: "Conclusion",
-      title: "Conclusions & Thank You",
+      title: "Takeaways & Thank You",
       primaryLabel: "Park-n-Ride architecture",
       primaryValue: "end-to-end",
       primaryNote: "BB primitives → zoned neutral-atom execution",
@@ -3583,25 +3582,25 @@ export default function PresentPage() {
               opacity: ease(progress / 0.25),
               transform: `translateY(${mix(16, 0, ease(progress / 0.25))}px)`,
             }}>
-              <span>01 · qLDPC efficiency</span>
-              <strong>12 logical qubits per gross block</strong>
-              <small>144 code qubits · 288 physical systems including checks</small>
+              <span>01 · Efficient protection</span>
+              <strong>Better codes protect more information with less hardware</strong>
+              <small>One module protects 12 units of quantum information instead of dedicating separate hardware to each.</small>
             </article>
             <article style={{
               opacity: ease((progress - 0.25) / 0.25),
               transform: `translateY(${mix(16, 0, ease((progress - 0.25) / 0.25))}px)`,
             }}>
-              <span>02 · motion is routing</span>
-              <strong>Global BB shifts use zero SWAPs</strong>
-              <small>AOD rolls replace fixed-coupler routing and shift readout</small>
+              <span>02 · Hardware advantage</span>
+              <strong>Moving atoms replaces hundreds of routing gates</strong>
+              <small>Rearranging the hardware performs a global shift without the 576 extra interactions required by fixed connections.</small>
             </article>
             <article style={{
               opacity: ease((progress - 0.5) / 0.25),
               transform: `translateY(${mix(16, 0, ease((progress - 0.5) / 0.25))}px)`,
             }}>
-              <span>03 · co-design wins</span>
-              <strong>Place close. Move together. Measure locally.</strong>
-              <small>Spectral ordering, parallel shifts, conflict-free bridges, local T injection</small>
+              <span>03 · System-level design</span>
+              <strong>Smart placement and coordinated motion make the system faster</strong>
+              <small>Keeping partners nearby and moving modules together reduces conflicts and shortens total runtime.</small>
             </article>
             <div className="conclusion-thanks" style={{
               opacity: ease((progress - 0.75) / 0.25),
