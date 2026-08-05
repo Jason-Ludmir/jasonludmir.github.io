@@ -14,7 +14,7 @@ const SLIDE_STOPS = [
   [0, 0.46, 0.7, 1],
   [0, 0.42, 0.68, 1],
   [0, 0.32, 0.58, 0.94],
-  [0, 2 / 6, 3 / 6, 5 / 6, 1],
+  [0, 2 / 6, 3 / 6, 5 / 6],
   [0, 0.34, 0.64, 0.92],
   [0, 0.28, 0.53, 0.634, 0.668, 0.904],
   [0, 0.32, 0.68, 1],
@@ -1333,17 +1333,10 @@ function phaseForStep(step: number) {
       description: "144 states move into their shifted data positions.",
     };
   }
-  if (step < 6) {
-    return {
-      number: "04",
-      label: "Shift complete",
-      description: "The global toric permutation has reached its target.",
-    };
-  }
   return {
     number: "04",
     label: "Shift complete",
-    description: "288 SWAPs. 576 two-qubit gates. Six physical timesteps.",
+    description: "288 SWAPs. 576 two-qubit gates. Five physical timesteps.",
   };
 }
 
@@ -1365,7 +1358,7 @@ function drawShift(canvas: HTMLCanvasElement, step: number) {
   ctx.clearRect(0, 0, width, height);
 
   const padX = Math.max(24, width * 0.04);
-  const padY = Math.max(22, height * 0.07);
+  const padY = Math.max(46, height * 0.07);
   const areaW = width - padX * 2;
   const areaH = height - padY * 2;
   const cellW = areaW / COLS;
@@ -1561,6 +1554,31 @@ function drawShift(canvas: HTMLCanvasElement, step: number) {
   ctx.fillStyle = colors.cyan;
   ctx.font = `650 ${slideTextSize(9)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
   ctx.fillText("SHIFT AUTOMORPHISM · δ = x³y⁻¹", padX + areaW, padY - 17);
+  ctx.restore();
+
+  const twoQubitGates =
+    step < 3
+      ? Math.round(288 * clamp(step / 2))
+      : 288 + Math.round(288 * clamp((step - 3) / 2));
+  const counterW = clamp(width * 0.23, 290, 360);
+  const counterH = 34;
+  const counterX = padX + areaW - counterW;
+  const counterY = padY + areaH + 8;
+  ctx.save();
+  ctx.beginPath();
+  ctx.roundRect(counterX, counterY, counterW, counterH, counterH / 2);
+  ctx.fillStyle = "rgba(8,25,36,.9)";
+  ctx.fill();
+  ctx.strokeStyle = "rgba(109,243,255,.34)";
+  ctx.stroke();
+  ctx.fillStyle = canvasText.muted;
+  ctx.textAlign = "left";
+  ctx.font = `600 ${slideTextSize(5.4)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+  ctx.fillText("TWO-QUBIT GATES EXECUTED", counterX + 16, counterY + 22);
+  ctx.fillStyle = colors.cyan;
+  ctx.textAlign = "right";
+  ctx.font = `650 ${slideTextSize(8.8)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+  ctx.fillText(`${twoQubitGates} / 576`, counterX + counterW - 16, counterY + 23);
   ctx.restore();
 }
 
@@ -2044,8 +2062,9 @@ function drawParallelAod(canvas: HTMLCanvasElement, progress: number) {
 
   ctx.save();
   ctx.fillStyle = canvasText.muted;
+  ctx.textAlign = "right";
   ctx.font = `500 ${slideTextSize(9)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
-  ctx.fillText("SHARED AOD COLUMNS SPAN THE COMPUTE COLUMN · TRUE WRAP DISTANCES · STAGGERED DROP-OFF", stageX, top - 15);
+  ctx.fillText("SHARED AOD COLUMNS SPAN THE COMPUTE COLUMN", stageX + stageW + 8, top - 15);
   ctx.restore();
 
   modules.forEach((module, index) => {
@@ -2159,16 +2178,9 @@ function drawParallelAod(canvas: HTMLCanvasElement, progress: number) {
             lift +
             resyncY;
           ctx.save();
-          ctx.fillStyle =
-            selectedRow && phase >= 1.4
-              ? colors.violet
-              : selectedColumn
-                ? colors.cyan
-                : side === 0
-                  ? module.color
-                  : colors.pink;
+          ctx.fillStyle = side === 0 ? colors.blue : colors.amber;
           ctx.globalAlpha = 0.88;
-          ctx.shadowColor = selectedColumn || selectedRow ? ctx.fillStyle : "transparent";
+          ctx.shadowColor = selectedColumn || selectedRow ? colors.cyan : "transparent";
           ctx.shadowBlur = selectedColumn || selectedRow ? 5 : 0;
           ctx.beginPath();
           ctx.arc(atomX, atomY, radius, 0, Math.PI * 2);
@@ -3269,8 +3281,7 @@ export default function PresentPage() {
       ? Math.round(144 * clamp(step / 2))
       : 144 + Math.round(144 * clamp((step - 3) / 2));
   const resetCount =
-    Math.round(144 * clamp(step - 2)) +
-    Math.round(144 * clamp(step - 5));
+    Math.round(144 * clamp(step - 2));
   const activeConnections =
     step < 2 || (step >= 3 && step < 5) ? 144 : 0;
 
@@ -3386,10 +3397,10 @@ export default function PresentPage() {
       costs: [
         ["SWAPs complete", swapCount.toString(), "/ 288"],
         ["Active connections", activeConnections.toString(), "parallel width"],
-        ["Measure / reset", resetCount.toString(), "/ 288"],
-        ["Physical timestep", Math.min(6, Math.floor(step) + 1).toString(), "/ 6"],
+        ["Measure / reset", resetCount.toString(), "/ 144"],
+        ["Physical timestep", Math.min(5, Math.floor(step) + 1).toString(), "/ 5"],
       ],
-      timeline: ["Swap 01", "Reset", "Swap 02", "Done"],
+      timeline: ["Swap 01", "Reset", "Swap 02"],
       note: "Shift network only · syndrome cycle intentionally excluded",
     },
     {
@@ -3466,13 +3477,18 @@ export default function PresentPage() {
           ["legend-line", "active two-qubit gate"],
           ["state-dot", "quantum state"],
         ]
-      : [
-          ["legend-circle l", "L atom"],
-          ["legend-circle r", "R atom"],
-          ["aod-line", "moving AOD traps"],
-          ["slm-box", "SLM lattice"],
-          ["state-dot", contentScreen === 7 ? "captured wrap strip" : "module motion"],
-        ];
+      : contentScreen === 7
+        ? [
+            ["legend-circle l", "L atom"],
+            ["legend-circle r", "R atom"],
+            ["aod-line", "moving AOD traps"],
+            ["slm-box", "SLM lattice"],
+          ]
+        : [
+            ["legend-circle l", "L atom"],
+            ["legend-circle r", "R atom"],
+            ["aod-line", "moving AOD traps"],
+          ];
 
   return (
     <main className={`present-shell screen-${contentScreen}${screen === 0 ? " is-title-screen" : ""}`}>
