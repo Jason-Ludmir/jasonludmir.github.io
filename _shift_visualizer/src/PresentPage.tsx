@@ -3502,9 +3502,6 @@ export default function PresentPage() {
     <main className={`present-shell screen-${contentScreen}${screen === 0 ? " is-title-screen" : ""}`}>
       {screen > 0 && <header className="present-header">
         <div className="present-title">
-          <a href="/" aria-label="Return to full explainer">
-            <span className="brand-mark" />
-          </a>
           <div>
             <p>{current.kicker}</p>
             <h1>{current.title}</h1>

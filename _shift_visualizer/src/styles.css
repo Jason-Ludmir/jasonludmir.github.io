@@ -103,39 +103,6 @@ footer {
   letter-spacing: 0.19em;
 }
 
-.brand-mark {
-  width: 25px;
-  height: 25px;
-  border: 1px solid rgba(109, 243, 255, 0.55);
-  border-radius: 50%;
-  position: relative;
-  box-shadow: 0 0 24px rgba(109, 243, 255, 0.15);
-}
-
-.brand-mark::before,
-.brand-mark::after {
-  content: "";
-  position: absolute;
-  background: var(--cyan);
-  opacity: 0.82;
-}
-
-.brand-mark::before {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  left: 4px;
-  top: 9px;
-  box-shadow: 11px 0 var(--cyan);
-}
-
-.brand-mark::after {
-  width: 11px;
-  height: 1px;
-  top: 11px;
-  left: 7px;
-}
-
 .paper-tag {
   display: flex;
   align-items: center;
@@ -1068,10 +1035,6 @@ footer p:last-child {
   gap: 18px;
   min-width: 0;
   overflow: hidden;
-}
-
-.present-title > a {
-  flex: 0 0 auto;
 }
 
 .present-title > div {
