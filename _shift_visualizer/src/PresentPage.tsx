@@ -20,6 +20,7 @@ const SLIDE_STOPS = [
   [0, 0.32, 0.68, 1],
   [0, 0.25, 0.5, 0.75, 1],
 ] as const;
+const SCREEN_ORDER = [0, 2, 3, 1, 4, 5, 6, 7, 8, 9, 10] as const;
 const STEP_TRANSITION_MS = 720;
 
 type Point = { x: number; y: number };
@@ -42,6 +43,28 @@ const mixPoint = (a: Point, b: Point, t: number): Point => ({
   x: mix(a.x, b.x, t),
   y: mix(a.y, b.y, t),
 });
+
+function progressToTimelinePosition(progress: number, stops: readonly number[]) {
+  if (stops.length < 2) return 0;
+  const segmentCount = stops.length - 1;
+  for (let index = 0; index < segmentCount; index += 1) {
+    const start = stops[index];
+    const end = stops[index + 1];
+    if (progress <= end || index === segmentCount - 1) {
+      const local = end === start ? 0 : clamp((progress - start) / (end - start));
+      return (index + local) / segmentCount;
+    }
+  }
+  return 1;
+}
+
+function timelinePositionToProgress(position: number, stops: readonly number[]) {
+  if (stops.length < 2) return 0;
+  const segmentCount = stops.length - 1;
+  const scaled = clamp(position) * segmentCount;
+  const index = Math.min(Math.floor(scaled), segmentCount - 1);
+  return mix(stops[index], stops[index + 1], scaled - index);
+}
 
 function connectivityPhase(progress: number) {
   if (progress <= 0.001) {
@@ -2460,33 +2483,35 @@ export default function PresentPage() {
   const [screen, setScreen] = useState(0);
   const [progress, setProgress] = useState(0);
   const [playing, setPlaying] = useState(false);
-  const slideStops = SLIDE_STOPS[screen];
+  const contentScreen = SCREEN_ORDER[screen];
+  const slideStops = SLIDE_STOPS[contentScreen];
   const finalStop = slideStops[slideStops.length - 1];
+  const timelinePosition = progressToTimelinePosition(progress, slideStops);
   const step = progress * TOTAL_STEPS;
   const phase =
-    screen === 0
+    contentScreen === 0
       ? {
           number: "00",
           label: "Title",
           description: "Hardware-aware BB-code execution on neutral atoms.",
         }
-      : screen === 1
+      : contentScreen === 1
         ? connectivityPhase(progress)
-      : screen === 2
+      : contentScreen === 2
           ? classicalBitPhase(progress)
-        : screen === 3
+        : contentScreen === 3
             ? logicalQubitPhase(progress)
-          : screen === 4
+          : contentScreen === 4
               ? scalingPhase(progress)
-            : screen === 5
+            : contentScreen === 5
                 ? gateComplexityPhase(progress)
-              : screen === 6
+              : contentScreen === 6
                   ? phaseForStep(step)
-                  : screen === 7
+                  : contentScreen === 7
                     ? parkPhase(progress)
-                    : screen === 8
+                    : contentScreen === 8
                       ? parallelPhase(progress)
-                      : screen === 9
+                      : contentScreen === 9
                         ? placementPhase(progress)
                         : conclusionPhase(progress);
 
@@ -2521,25 +2546,25 @@ export default function PresentPage() {
         }
       }
       if (canvasRef.current) {
-        if (screen === 1) {
+        if (contentScreen === 1) {
           drawConnectivityIntro(canvasRef.current, progressRef.current);
-        } else if (screen === 2) {
+        } else if (contentScreen === 2) {
           drawClassicalBitIntro(canvasRef.current, progressRef.current);
-        } else if (screen === 3) {
+        } else if (contentScreen === 3) {
           drawLogicalQubitIntro(canvasRef.current, progressRef.current);
-        } else if (screen === 4) {
+        } else if (contentScreen === 4) {
           drawScalingComparison(canvasRef.current, progressRef.current);
-        } else if (screen === 5) {
+        } else if (contentScreen === 5) {
           drawGateComplexity(canvasRef.current, progressRef.current);
-        } else if (screen === 6) {
+        } else if (contentScreen === 6) {
           drawShift(canvasRef.current, progressRef.current * TOTAL_STEPS);
-        } else if (screen === 7) {
+        } else if (contentScreen === 7) {
           drawAodShift(canvasRef.current, progressRef.current);
-        } else if (screen === 8) {
+        } else if (contentScreen === 8) {
           drawParallelAod(canvasRef.current, progressRef.current);
-        } else if (screen === 9) {
+        } else if (contentScreen === 9) {
           drawPlacementOrdering(canvasRef.current, progressRef.current);
-        } else if (screen === 10) {
+        } else if (contentScreen === 10) {
           drawConclusionArchitecture(canvasRef.current, progressRef.current);
         }
       }
@@ -2550,7 +2575,7 @@ export default function PresentPage() {
       if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
       lastTimeRef.current = null;
     };
-  }, [finalStop, playing, screen, setBoundedProgress]);
+  }, [contentScreen, finalStop, playing, setBoundedProgress]);
 
   const replay = useCallback(() => {
     transitionRef.current = null;
@@ -2596,7 +2621,7 @@ export default function PresentPage() {
     if (previousStop !== undefined) {
       animateTo(previousStop);
     } else if (screen > 0) {
-      const previousSlideStops = SLIDE_STOPS[screen - 1];
+      const previousSlideStops = SLIDE_STOPS[SCREEN_ORDER[screen - 1]];
       changeScreen(screen - 1, previousSlideStops[previousSlideStops.length - 1]);
     }
   }, [animateTo, changeScreen, screen, slideStops]);
@@ -2819,11 +2844,11 @@ export default function PresentPage() {
       note: "Architecture extends Park-n-Ride Figs. 3 and 6 with explicit measurement and per-column T-state factory zones",
     },
   ] as const;
-  const current = titles[screen];
+  const current = titles[contentScreen];
   const legends =
-    screen <= 5 || screen === 9 || screen === 10
+    contentScreen <= 5 || contentScreen === 9 || contentScreen === 10
       ? []
-      : screen === 6
+      : contentScreen === 6
       ? [
           ["legend-circle l", "L data"],
           ["legend-circle r", "R data"],
@@ -2837,11 +2862,11 @@ export default function PresentPage() {
           ["legend-circle r", "R atom"],
           ["aod-line", "moving AOD traps"],
           ["slm-box", "SLM lattice"],
-          ["state-dot", screen === 7 ? "captured wrap strip" : "module motion"],
+          ["state-dot", contentScreen === 7 ? "captured wrap strip" : "module motion"],
         ];
 
   return (
-    <main className={`present-shell screen-${screen}${screen === 0 ? " is-title-screen" : ""}`}>
+    <main className={`present-shell screen-${contentScreen}${screen === 0 ? " is-title-screen" : ""}`}>
       {screen > 0 && <header className="present-header">
         <div className="present-title">
           <a href="/" aria-label="Return to full explainer">
@@ -2853,7 +2878,7 @@ export default function PresentPage() {
           </div>
         </div>
         <nav className="deck-tabs" aria-label="Presentation screens">
-          {["Title", "Connectivity", "Classical bits", "Logical qubits", "Why qLDPC", "Gate tradeoff", "Fixed couplers", "Park ’n Ride", "Parallel column", "Placement results", "Conclusion"].map((label, index) => (
+          {["Title", "Classical bits", "Logical qubits", "Connectivity", "Why qLDPC", "Gate tradeoff", "Fixed couplers", "Park ’n Ride", "Parallel column", "Placement results", "Conclusion"].map((label, index) => (
             <button
               key={label}
               className={screen === index ? "is-active" : ""}
@@ -2869,7 +2894,6 @@ export default function PresentPage() {
           <span>{phase.number}</span>
           <div>
             <strong>{phase.label}</strong>
-            <small>{phase.description}</small>
           </div>
         </div>
       </header>}
@@ -2909,23 +2933,23 @@ export default function PresentPage() {
           ref={canvasRef}
           className="present-canvas"
           aria-label={
-            screen === 1
+            contentScreen === 1
               ? "Animated comparison of fixed superconducting connectivity and mobile neutral-atom connectivity"
-              : screen === 2
+              : contentScreen === 2
                 ? "Animated classical bit flip and seven-bit majority-vote repetition code"
-                : screen === 3
+                : contentScreen === 3
                   ? "Animated introduction to physical errors and logical qubit encoding with a color code"
-                  : screen === 4
+                  : contentScreen === 4
                     ? "Animated comparison of surface, color, and bivariate bicycle code scaling"
-                    : screen === 5
+                    : contentScreen === 5
                       ? "Animated comparison of transversal CSS gates and BB logical-control complexity"
-                      : screen === 6
+                      : contentScreen === 6
                         ? "Animated fixed-coupler shift automorphism"
-                        : screen === 7
+                        : contentScreen === 7
                           ? "Animated Park-n-Ride AOD shift automorphism"
-                          : screen === 8
+                          : contentScreen === 8
                             ? "Three Park-n-Ride modules shifting in parallel"
-                            : screen === 9
+                            : contentScreen === 9
                               ? "Animated comparison of arbitrary and spectral BB-module placement with Park-n-Ride result plots"
                               : "Complete Park-n-Ride architecture with compute, interaction, measurement, and T-state factory zones"
           }
@@ -3007,42 +3031,38 @@ export default function PresentPage() {
             ))}
           </div>
         )}
-        {screen > 0 && screen !== 10 && !(screen === 2 && progress < 0.43) && <div className="present-shift">
+        {contentScreen > 0 && contentScreen !== 10 && !(contentScreen === 2 && progress < 0.43) && <div className="present-shift">
           <span>
-            {screen === 1
+            {contentScreen === 1
               ? "physical layout ↔ connectivity graph"
-              : screen === 2
+              : contentScreen === 2
                 ? "one classical value"
-                : screen === 3
+                : contentScreen === 3
                   ? "one quantum state"
-                  : screen === 4
+                  : contentScreen === 4
                     ? "topological patches vs qLDPC block"
-                    : screen === 5
+                    : contentScreen === 5
                       ? "logical entangling gate"
-                      : screen === 10
-                        ? "complete Park-n-Ride system"
-                      : screen === 9
+                      : contentScreen === 9
                         ? "weighted module-interaction graph"
-                      : screen === 8
+                      : contentScreen === 8
                         ? "shared physical directions"
                         : "global permutation"}
           </span>
           <strong>
-            {screen === 1
+            {contentScreen === 1
               ? "fixed edges ↔ moving edges"
-              : screen === 2
+              : contentScreen === 2
                 ? "1 → 1111111"
-                : screen === 3
+                : contentScreen === 3
                   ? "|ψ⟩ → |ψ⟩ₗ"
-                  : screen === 4
+                  : contentScreen === 4
                     ? "1 logical ↔ 12 logical"
-                    : screen === 5
+                    : contentScreen === 5
                       ? "direct layer ↔ control stack"
-                      : screen === 10
-                        ? "place → move → measure → inject"
-                      : screen === 9
+                      : contentScreen === 9
                         ? "Fiedler order → column packing"
-                      : screen === 8
+                      : contentScreen === 8
                         ? "+x · +y"
                         : "+3x · −1y"}
           </strong>
@@ -3109,22 +3129,29 @@ export default function PresentPage() {
           {progress >= finalStop - 0.001 ? "Replay" : playing ? "Pause" : "Play"}
         </button>
         <div className="present-timeline">
-          <input
-            type="range"
-            min="0"
-            max={finalStop}
-            step="0.001"
-            value={progress}
-            style={{ "--timeline-progress": `${(progress / finalStop) * 100}%` } as React.CSSProperties}
-            aria-label="Shift timeline"
-            onChange={(event) => {
-              transitionRef.current = null;
-              setPlaying(false);
-              setBoundedProgress(Number(event.target.value));
-            }}
-          />
-          <div aria-hidden="true">
-            {current.timeline.map((label) => <span key={label}>{label}</span>)}
+          <div className="present-timeline-track">
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.001"
+              value={timelinePosition}
+              style={{ "--timeline-progress": `${timelinePosition * 100}%` } as React.CSSProperties}
+              aria-label="Slide animation timeline"
+              onChange={(event) => {
+                transitionRef.current = null;
+                setPlaying(false);
+                setBoundedProgress(timelinePositionToProgress(Number(event.target.value), slideStops));
+              }}
+            />
+            <div className="present-timeline-ticks" aria-hidden="true">
+              {slideStops.map((_, index) => (
+                <span
+                  key={index}
+                  style={{ left: `${(index / (slideStops.length - 1)) * 100}%` }}
+                />
+              ))}
+            </div>
           </div>
         </div>
         <button
