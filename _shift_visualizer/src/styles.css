@@ -977,7 +977,8 @@ footer p:last-child {
 /* Full-screen, slide-native presentation route. */
 .present-shell {
   position: relative;
-  width: 100vw;
+  width: 100%;
+  max-width: 100vw;
   height: 100svh;
   min-height: 620px;
   display: grid;
@@ -1048,6 +1049,8 @@ footer p:last-child {
 .present-header {
   position: relative;
   z-index: 2;
+  width: 100%;
+  min-width: 0;
   min-height: 98px;
   display: flex;
   align-items: center;
@@ -1055,17 +1058,25 @@ footer p:last-child {
   gap: 30px;
   padding: 18px clamp(24px, 3.2vw, 60px);
   border-bottom: 1px solid var(--line);
+  overflow: hidden;
 }
 
 .present-title {
+  flex: 1 1 0;
   display: flex;
   align-items: center;
   gap: 18px;
   min-width: 0;
+  overflow: hidden;
 }
 
 .present-title > a {
   flex: 0 0 auto;
+}
+
+.present-title > div {
+  min-width: 0;
+  overflow: hidden;
 }
 
 .present-title p,
@@ -1091,9 +1102,12 @@ footer p:last-child {
   letter-spacing: -0.045em;
   font-weight: 520;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .present-phase {
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   gap: 14px;
@@ -1104,6 +1118,7 @@ footer p:last-child {
 }
 
 .deck-tabs {
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   gap: 5px;
@@ -1248,14 +1263,16 @@ footer p:last-child {
 .present-stage {
   position: relative;
   z-index: 1;
+  width: 100%;
+  min-width: 0;
   min-height: 0;
   overflow: hidden;
 }
 
 .deck-edge {
-  position: absolute;
-  z-index: 5;
-  bottom: 14px;
+  position: fixed;
+  z-index: 20;
+  bottom: 16px;
   width: 30px;
   height: 30px;
   padding: 0;
@@ -1282,11 +1299,11 @@ footer p:last-child {
 }
 
 .deck-edge-left {
-  left: 16px;
+  left: 18px;
 }
 
 .deck-edge-right {
-  right: 16px;
+  right: 18px;
 }
 
 .deck-edge-left:hover {
@@ -1920,7 +1937,7 @@ footer p:last-child {
 
 @media (max-width: 2050px) {
   .deck-tabs button {
-    width: 48px;
+    width: 42px;
     justify-content: center;
     overflow: hidden;
     white-space: nowrap;
@@ -1937,11 +1954,13 @@ footer p:last-child {
   }
 }
 
-@media (max-width: 950px) {
+@media (max-width: 1550px) {
   .present-phase {
     display: none;
   }
+}
 
+@media (max-width: 950px) {
   .present-costs {
     grid-template-columns: 1.45fr repeat(2, 1fr);
   }
