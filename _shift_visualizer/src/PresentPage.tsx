@@ -2748,6 +2748,8 @@ export default function PresentPage() {
   const contentScreen = SCREEN_ORDER[screen];
   const slideStops = SLIDE_STOPS[contentScreen];
   const finalStop = slideStops[slideStops.length - 1];
+  const hasPreviousNavigation = screen > 0 || progress > slideStops[0] + 0.001;
+  const hasNextNavigation = screen < 10 || progress < finalStop - 0.001;
   const timelinePosition = progressToTimelinePosition(progress, slideStops);
   const step = progress * TOTAL_STEPS;
   const phase =
@@ -3296,58 +3298,24 @@ export default function PresentPage() {
             ))}
           </div>
         )}
-        {contentScreen > 0 && contentScreen !== 10 && !(contentScreen === 2 && progress < 0.43) && <div className="present-shift">
-          <span>
-            {contentScreen === 1
-              ? "physical layout ↔ connectivity graph"
-              : contentScreen === 2
-                ? "one classical value"
-                : contentScreen === 3
-                  ? "one quantum state"
-                  : contentScreen === 4
-                    ? "topological patches vs qLDPC block"
-                    : contentScreen === 5
-                      ? "logical entangling gate"
-                      : contentScreen === 9
-                        ? "weighted module-interaction graph"
-                      : contentScreen === 8
-                        ? "shared physical directions"
-                        : "global permutation"}
-          </span>
-          <strong>
-            {contentScreen === 1
-              ? "fixed edges ↔ moving edges"
-              : contentScreen === 2
-                ? "1 → 1111111"
-                : contentScreen === 3
-                  ? "|ψ⟩ → |ψ⟩ₗ"
-                  : contentScreen === 4
-                    ? "1 logical ↔ 12 logical"
-                    : contentScreen === 5
-                      ? "direct layer ↔ control stack"
-                      : contentScreen === 9
-                        ? "Fiedler order → column packing"
-                      : contentScreen === 8
-                        ? "+x · +y"
-                        : "+3x · −1y"}
-          </strong>
-        </div>}
-        <button
-          className="deck-edge deck-edge-left"
-          onClick={retreat}
-          disabled={screen === 0 && progress <= 0.001}
-          aria-label="Previous state or presentation screen"
-        >
-          ←
-        </button>
-        <button
-          className="deck-edge deck-edge-right"
-          onClick={advance}
-          disabled={screen === 10 && progress >= finalStop - 0.001}
-          aria-label="Next state or presentation screen"
-        >
-          →
-        </button>
+        {hasPreviousNavigation && (
+          <button
+            className="deck-edge deck-edge-left"
+            onClick={retreat}
+            aria-label="Previous state or presentation screen"
+          >
+            ←
+          </button>
+        )}
+        {hasNextNavigation && (
+          <button
+            className="deck-edge deck-edge-right"
+            onClick={advance}
+            aria-label="Next state or presentation screen"
+          >
+            →
+          </button>
+        )}
       </section>
 
       {screen === 0 || screen === 10 ? (

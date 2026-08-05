@@ -1252,38 +1252,46 @@ footer p:last-child {
 .deck-edge {
   position: absolute;
   z-index: 5;
-  top: 50%;
-  width: 42px;
-  height: 68px;
-  border: 1px solid rgba(147, 178, 202, 0.15);
-  background: rgba(5, 14, 22, 0.76);
+  bottom: 14px;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  background: transparent;
   color: var(--cyan);
-  font-size: 20px;
+  font-size: 21px;
+  line-height: 1;
   cursor: pointer;
-  backdrop-filter: blur(10px);
-  transition: background 160ms ease, border-color 160ms ease, opacity 160ms ease;
+  opacity: 0.72;
+  text-shadow: 0 0 12px rgba(109, 243, 255, 0.35);
+  transition: color 160ms ease, opacity 160ms ease, transform 160ms ease;
 }
 
-.deck-edge:hover:not(:disabled) {
-  border-color: rgba(109, 243, 255, 0.38);
-  background: rgba(12, 29, 41, 0.94);
+.deck-edge:hover {
+  color: #dffcff;
+  opacity: 1;
 }
 
-.deck-edge:disabled {
-  opacity: 0.16;
-  cursor: default;
+.deck-edge:focus-visible {
+  outline: 1px solid rgba(109, 243, 255, 0.6);
+  outline-offset: 3px;
+  border-radius: 50%;
 }
 
 .deck-edge-left {
-  left: 0;
-  border-left: 0;
-  border-radius: 0 12px 12px 0;
+  left: 16px;
 }
 
 .deck-edge-right {
-  right: 0;
-  border-right: 0;
-  border-radius: 12px 0 0 12px;
+  right: 16px;
+}
+
+.deck-edge-left:hover {
+  transform: translateX(-3px);
+}
+
+.deck-edge-right:hover {
+  transform: translateX(3px);
 }
 
 .screen-7 .deck-edge,
@@ -1621,8 +1629,7 @@ footer p:last-child {
   height: 100%;
 }
 
-.present-legend,
-.present-shift {
+.present-legend {
   position: absolute;
   z-index: 3;
   display: flex;
@@ -1635,7 +1642,7 @@ footer p:last-child {
 }
 
 .present-legend {
-  left: clamp(20px, 3vw, 54px);
+  left: clamp(58px, 4.5vw, 82px);
   bottom: 13px;
   flex-wrap: wrap;
   gap: 12px;
@@ -1673,26 +1680,6 @@ footer p:last-child {
   height: 8px;
   border: 1px solid rgba(50, 214, 173, 0.72);
   background: rgba(50, 214, 173, 0.12);
-}
-
-.present-shift {
-  top: 13px;
-  right: clamp(20px, 3vw, 54px);
-  flex-direction: column;
-  align-items: flex-end;
-}
-
-.present-shift span {
-  color: #657c8f;
-  font-size: 12px;
-  letter-spacing: 0.11em;
-  text-transform: uppercase;
-}
-
-.present-shift strong {
-  margin-top: 3px;
-  color: #d9ebf8;
-  font-size: 18px;
 }
 
 .present-controls {
