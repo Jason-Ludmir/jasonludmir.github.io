@@ -635,11 +635,31 @@ function drawLogicalQubitIntro(canvas: HTMLCanvasElement, progress: number) {
   });
   codePoints.forEach((p, i) => {
     const isError = i === 6 && correction < 0.78;
-    ctx.fillStyle = isError ? colors.amber : "#d8f7ef";
-    ctx.strokeStyle = isError ? "#ffe0a8" : colors.green;
-    ctx.lineWidth = isError ? 2.5 : 1.2;
-    ctx.beginPath(); ctx.arc(p.x, p.y, isError ? 8 : 6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-    if (isError) mono("!", p.x, p.y + 3, 8, "#3a2609", "center");
+    if (isError) {
+      ctx.save();
+      ctx.shadowColor = colors.pink;
+      ctx.shadowBlur = 13;
+      ctx.fillStyle = colors.amber;
+      ctx.strokeStyle = "#fff0cc";
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y - 14);
+      ctx.lineTo(p.x - 13, p.y + 10);
+      ctx.lineTo(p.x + 13, p.y + 10);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+      mono("!", p.x, p.y + 6, 11, "#3a190c", "center");
+    } else {
+      ctx.fillStyle = "#d8f7ef";
+      ctx.strokeStyle = colors.green;
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
   });
   ctx.restore();
 
