@@ -1248,19 +1248,20 @@ function drawGateComplexity(canvas: HTMLCanvasElement, progress: number) {
 
   panel(inset, bottomY, width - inset * 2, bottomH, colors.green);
   ctx.save(); ctx.globalAlpha = bbReveal;
-  mono("BIVARIATE BICYCLE · SELECTED LOGICAL CNOT", inset + 16, bottomY + 21, 9, colors.green);
-  mono("12 LOGICAL QUBITS SHARE EACH DENSE CODE BLOCK", inset + 16, bottomY + 35, 7, canvasText.muted);
+  mono("BIVARIATE BICYCLE · ARBITRARY LOGICAL CNOT", inset + 16, bottomY + 21, 9, colors.green);
+  mono("ONE GATE BECOMES A COMPILED, FAULT-TOLERANT PROTOCOL", inset + 16, bottomY + 38, 7, canvasText.muted);
+  badge("NO TRANSVERSAL SHORTCUT", width - inset - 16, bottomY + 22, colors.amber, bbReveal, "right");
 
-  const moduleW = clamp(width * 0.115, 116, 166);
-  const moduleH = clamp(bottomH * 0.58, 86, 126);
-  const moduleY = bottomY + bottomH * 0.58;
+  const moduleW = clamp(width * 0.1, 112, 150);
+  const moduleH = clamp(bottomH * 0.52, 86, 122);
+  const moduleY = bottomY + bottomH * 0.56;
   const drawBbModule = (cx: number, target: number, label: string) => {
     const x = cx - moduleW / 2;
     const y = moduleY - moduleH / 2;
     roundRect(x, y, moduleW, moduleH, 12);
     ctx.fillStyle = "rgba(14,43,42,.72)"; ctx.fill();
     ctx.strokeStyle = "rgba(50,214,173,.32)"; ctx.stroke();
-    mono(label, cx, y - 8, 7, canvasText.muted, "center");
+    mono(label, cx, y - 8, 6.2, canvasText.muted, "center");
     for (let i = 0; i < 12; i++) {
       const col = i % 6, row = Math.floor(i / 6);
       const px = x + 15 + col * (moduleW - 30) / 5;
@@ -1272,40 +1273,62 @@ function drawGateComplexity(canvas: HTMLCanvasElement, progress: number) {
     }
     return { x, y, cx };
   };
-  const leftModule = drawBbModule(inset + moduleW * 0.65, 4, "BB MODULE A");
-  const rightModule = drawBbModule(width - inset - moduleW * 0.65, 10, "BB MODULE B");
+  const leftModule = drawBbModule(inset + moduleW * 0.65, 4, "MODULE A · L4");
+  const rightModule = drawBbModule(width - inset - moduleW * 0.65, 10, "MODULE B · L10");
   ctx.restore();
 
   const flowX1 = leftModule.x + moduleW + 22;
   const flowX2 = rightModule.x - 22;
   const flowW = flowX2 - flowX1;
   const cards = [
-    ["01", "REWRITE", "CNOT → Pauli pattern", "turn gate into checks"],
-    ["02", "ADDRESS", "shift to native support", "bring targets together"],
-    ["03", "SURGERY", "LPU + adapter checks", "measure both blocks"],
-    ["04", "CORRECT", "decode + feed-forward", "apply known correction"],
+    ["01", "SELECT", "choose L4 + L10", "find support", "DENSE BLOCKS"],
+    ["02", "TRANSLATE", "CNOT → checks", "rewrite gate", "MULTI-MEASURE"],
+    ["03", "ROUTE", "global shifts", "align support", "14-STEP SHIFTS"],
+    ["04", "SURGERY", "LPU + adapters", "measure jointly", "ANCILLA ROUNDS"],
+    ["05", "DECODE", "decode outcome", "apply correction", "FEED-FORWARD"],
   ];
-  const cardGap = 7;
-  const cardW = (flowW - cardGap * 3) / 4;
-  const cardH = 72;
+  const cardGap = 8;
+  const cardW = (flowW - cardGap * (cards.length - 1)) / cards.length;
+  const cardH = 96;
   const cardY = moduleY - cardH / 2;
-  cards.forEach(([num, title, detail, blurb], i) => {
-    const local = ease((compile * 1.28 - i * 0.09));
+  cards.forEach(([num, title, detail, blurb, burden], i) => {
+    const local = ease((compile * 1.4 - i * 0.1));
     const x = flowX1 + i * (cardW + cardGap);
     ctx.save(); ctx.globalAlpha = local;
     roundRect(x, cardY, cardW, cardH, 9);
-    ctx.fillStyle = "rgba(17,35,44,.92)"; ctx.fill();
-    ctx.strokeStyle = i === 2 ? "rgba(50,214,173,.48)" : "rgba(133,161,181,.2)"; ctx.stroke();
-    mono(num, x + 9, cardY + 14, 6.5, i === 2 ? colors.green : "rgba(109,243,255,.55)");
-    mono(title, x + 9, cardY + 29, 7.5, "rgba(229,241,249,.88)");
-    mono(detail, x + 9, cardY + 43, 5.8, canvasText.muted);
-    mono(blurb, x + 9, cardY + 59, 5, "rgba(229,240,248,.92)");
+    ctx.fillStyle = i === 3 ? "rgba(40,31,28,.94)" : "rgba(17,35,44,.94)"; ctx.fill();
+    ctx.strokeStyle = i >= 2 ? "rgba(255,189,102,.42)" : "rgba(133,161,181,.24)"; ctx.stroke();
+    mono(num, x + 9, cardY + 15, 6.3, i >= 2 ? colors.amber : "rgba(109,243,255,.62)");
+    mono(title, x + 9, cardY + 31, 7.2, "rgba(238,247,252,.94)");
+    mono(detail, x + 9, cardY + 48, 5.2, canvasText.muted);
+    mono(blurb, x + 9, cardY + 64, 4.8, "rgba(229,240,248,.94)");
+    roundRect(x + 7, cardY + 73, cardW - 14, 16, 8);
+    ctx.fillStyle = i >= 2 ? "rgba(255,189,102,.1)" : "rgba(109,243,255,.07)";
+    ctx.fill();
+    ctx.strokeStyle = i >= 2 ? "rgba(255,189,102,.26)" : "rgba(109,243,255,.18)";
+    ctx.stroke();
+    mono(burden, x + cardW / 2, cardY + 84.5, 4.2, i >= 2 ? colors.amber : colors.cyan, "center");
     if (i < cards.length - 1) {
-      ctx.strokeStyle = "rgba(109,243,255,.35)";
+      ctx.strokeStyle = i >= 1 ? "rgba(255,189,102,.42)" : "rgba(109,243,255,.35)";
       ctx.beginPath(); ctx.moveTo(x + cardW, cardY + cardH / 2); ctx.lineTo(x + cardW + cardGap, cardY + cardH / 2); ctx.stroke();
     }
     ctx.restore();
   });
+
+  const summaryT = ease((compile - 0.66) / 0.34);
+  const summaryY = bottomY + bottomH - 34;
+  ctx.save();
+  ctx.globalAlpha = summaryT;
+  roundRect(flowX1, summaryY, flowW, 24, 12);
+  ctx.fillStyle = "rgba(255,189,102,.075)";
+  ctx.fill();
+  ctx.strokeStyle = "rgba(255,189,102,.3)";
+  ctx.stroke();
+  ctx.restore();
+  ctx.save();
+  ctx.globalAlpha = summaryT;
+  mono("ONE LOGICAL CNOT → SHIFTS + ANCILLAS + JOINT MEASUREMENTS + DECODING", flowX1 + flowW / 2, summaryY + 16, 5.8, colors.amber, "center");
+  ctx.restore();
 }
 
 function phaseForStep(step: number) {
@@ -3328,7 +3351,7 @@ export default function PresentPage() {
     },
     {
       kicker: "Classical error correction",
-      title: "One bad bit should not decide the answer",
+      title: "One Bad Bit Should Not Decide the Answer",
       primaryLabel: "Stored copies",
       primaryValue: "1 → 7",
       primaryNote: "add redundancy before transmission",
@@ -3343,7 +3366,7 @@ export default function PresentPage() {
     },
     {
       kicker: "Quantum error correction",
-      title: "From a fragile qubit to a logical qubit",
+      title: "From a Fragile Qubit to a Logical Qubit",
       primaryLabel: "Quantum information encoded",
       primaryValue: "1 → 7",
       primaryNote: "physical systems in a small color code",
@@ -3373,7 +3396,7 @@ export default function PresentPage() {
     },
     {
       kicker: "Logical gates",
-      title: "More corrections. Harder logical control.",
+      title: "More Corrections. Harder Logical Control.",
       primaryLabel: "Direct physical gate layers",
       primaryValue: progress < 0.58 ? "1" : "→ protocol",
       primaryNote: "bitwise CSS → BB instruction stack",
@@ -3383,7 +3406,7 @@ export default function PresentPage() {
         ["BB logical measurement", "120 / 216", "gross / two-gross timesteps"],
         ["Arbitrary Pauli synthesis", "≈18.5", "bicycle measurements · mean"],
       ],
-      timeline: ["Two CSS blocks", "Logical CNOT", "Select BB qubits", "Compile + surgery"],
+      timeline: ["Direct CSS gate", "Reveal BB modules", "Compile BB CNOT", "Protocol complete"],
       note: "*Blockwise transversal CNOT assumes matching pairwise couplers · BB costs from Tour de Gross Tables 2 and Fig. 9",
     },
     {
@@ -3418,7 +3441,7 @@ export default function PresentPage() {
     },
     {
       kicker: "Large Scale NA BB Operations",
-      title: "Different shifts execute in Parallel",
+      title: "Different Shifts Execute in Parallel",
       primaryLabel: "Shift automorphisms in flight",
       primaryValue: progress >= 1 ? "3" : progress > 0.04 ? "3" : "0",
       primaryNote: "/ 3 concurrent",
@@ -3433,7 +3456,7 @@ export default function PresentPage() {
     },
     {
       kicker: "Module Placement",
-      title: "Module location impacts circuit runtime",
+      title: "Module Location Impacts Circuit Runtime",
       primaryLabel: "Placement strategy",
       primaryValue: "spectral",
       primaryNote: "weighted interaction graph → compute columns",
@@ -3638,19 +3661,7 @@ export default function PresentPage() {
       {screen === 0 || screen === 10 ? (
         <footer className={`title-controls${screen === 10 ? " conclusion-controls" : ""}`}>
           <span className="title-controls-rule" aria-hidden="true" />
-          <p>
-            {screen === 0
-              ? <><kbd>→</kbd> Begin presentation</>
-              : progress < 0.249
-                ? <><kbd>→</kbd> Reveal takeaway 1</>
-                : progress < 0.499
-                  ? <><kbd>→</kbd> Reveal takeaway 2</>
-                  : progress < 0.749
-                    ? <><kbd>→</kbd> Reveal takeaway 3</>
-                    : progress < 0.999
-                      ? <><kbd>→</kbd> Reveal thank you</>
-                      : "End of presentation"}
-          </p>
+          {screen === 0 && <p><kbd>→</kbd> Begin presentation</p>}
           <button
             className="fullscreen-button"
             onClick={() => {

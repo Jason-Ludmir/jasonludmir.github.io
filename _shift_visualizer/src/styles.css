@@ -1538,6 +1538,10 @@ footer p:last-child {
   background: rgba(0, 15, 40, 0.84);
 }
 
+.conclusion-controls {
+  grid-template-columns: 1fr auto;
+}
+
 .title-controls-rule {
   height: 1px;
   background: linear-gradient(90deg, rgba(216, 185, 104, 0.48), rgba(117, 163, 202, 0.1));
