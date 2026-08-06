@@ -1951,3 +1951,280 @@ footer p:last-child {
     justify-content: center;
   }
 }
+
+/* Projector-safe light presentation theme. Canvas artwork is inverted with a
+   compensating hue rotation so its established accent colors remain familiar
+   while dark surfaces and light text become light surfaces and dark text. */
+.present-shell {
+  --foreground: #17212b;
+  --muted: #5d6874;
+  --line: rgba(51, 65, 85, 0.2);
+  --cyan: #007f91;
+  --blue: #1d64a5;
+  --amber: #a95c0b;
+  --pink: #b3265e;
+  --green: #08785b;
+  color: var(--foreground);
+  background:
+    radial-gradient(circle at 58% 42%, rgba(125, 196, 209, 0.28), transparent 43%),
+    linear-gradient(160deg, #fbfaf7, #eeeae2 74%);
+}
+
+.present-shell::before {
+  background:
+    linear-gradient(rgba(69, 87, 103, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(69, 87, 103, 0.055) 1px, transparent 1px);
+}
+
+.present-shell.screen-7,
+.present-shell.screen-8 {
+  background:
+    radial-gradient(circle at 58% 42%, rgba(125, 194, 169, 0.3), transparent 44%),
+    radial-gradient(circle at 18% 18%, rgba(179, 158, 218, 0.2), transparent 31%),
+    linear-gradient(160deg, #fafbf7, #ebece5 74%);
+}
+
+.present-shell.screen-5 {
+  background:
+    radial-gradient(circle at 52% 52%, rgba(178, 154, 218, 0.24), transparent 45%),
+    radial-gradient(circle at 82% 20%, rgba(226, 183, 119, 0.2), transparent 30%),
+    linear-gradient(160deg, #faf9fb, #eeeae6 74%);
+}
+
+.present-shell.screen-9 {
+  background:
+    radial-gradient(circle at 25% 46%, rgba(226, 183, 119, 0.24), transparent 37%),
+    radial-gradient(circle at 76% 44%, rgba(125, 194, 169, 0.28), transparent 43%),
+    linear-gradient(155deg, #fbfaf6, #ecebe4 74%);
+}
+
+.present-shell.screen-10 {
+  background:
+    radial-gradient(circle at 50% 44%, rgba(125, 194, 169, 0.3), transparent 45%),
+    radial-gradient(circle at 12% 15%, rgba(122, 169, 213, 0.2), transparent 30%),
+    radial-gradient(circle at 88% 12%, rgba(226, 183, 119, 0.2), transparent 29%),
+    linear-gradient(155deg, #fafbf7, #e9ece5 74%);
+}
+
+.present-shell.is-title-screen {
+  background:
+    radial-gradient(circle at 50% 33%, rgba(91, 143, 194, 0.24), transparent 39%),
+    radial-gradient(circle at 8% 90%, rgba(211, 174, 81, 0.2), transparent 33%),
+    linear-gradient(145deg, #f8fafc, #e8eef4 56%, #f3eee4);
+}
+
+.present-shell.is-title-screen::before {
+  opacity: 0.72;
+  background:
+    linear-gradient(rgba(69, 87, 103, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(69, 87, 103, 0.05) 1px, transparent 1px);
+}
+
+.present-canvas {
+  filter: invert(1) hue-rotate(180deg) saturate(0.92) contrast(1.06);
+}
+
+.present-title h1,
+.present-phase strong {
+  color: #17212b;
+}
+
+.present-title p,
+.present-phase > span {
+  color: var(--cyan);
+}
+
+.present-phase small,
+.present-note {
+  color: #536473;
+}
+
+.deck-tabs button,
+.deck-tabs button span {
+  color: #5a6875;
+}
+
+.deck-tabs button:hover {
+  color: #17212b;
+  border-color: rgba(51, 65, 85, 0.22);
+}
+
+.deck-tabs button.is-active {
+  color: #16323a;
+  border-color: rgba(0, 127, 145, 0.42);
+  background: rgba(0, 127, 145, 0.09);
+}
+
+.screen-7 .deck-tabs button.is-active,
+.screen-8 .deck-tabs button.is-active,
+.screen-9 .deck-tabs button.is-active,
+.screen-10 .deck-tabs button.is-active {
+  border-color: rgba(8, 120, 91, 0.42);
+  background: rgba(8, 120, 91, 0.09);
+}
+
+.present-costs,
+.present-controls,
+.title-controls {
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 -8px 28px rgba(51, 65, 85, 0.06);
+}
+
+.present-costs article > span,
+.present-costs article > small {
+  color: #586876;
+}
+
+.present-costs article > strong {
+  color: #17212b;
+}
+
+.present-costs .primary-cost {
+  background: linear-gradient(110deg, rgba(0, 127, 145, 0.09), transparent);
+}
+
+.present-costs .primary-cost > strong {
+  color: var(--cyan);
+  text-shadow: none;
+}
+
+.deck-edge {
+  color: var(--cyan);
+  text-shadow: none;
+}
+
+.deck-edge:hover {
+  color: #004f5c;
+}
+
+.deck-edge:focus-visible {
+  outline-color: rgba(0, 127, 145, 0.65);
+}
+
+.present-legend {
+  color: #344452;
+  border-color: rgba(51, 65, 85, 0.22);
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 8px 24px rgba(51, 65, 85, 0.1);
+}
+
+.state-dot {
+  background: #17212b;
+  box-shadow: 0 0 0 2px rgba(0, 127, 145, 0.24);
+}
+
+.aod-line {
+  box-shadow: 0 0 5px rgba(0, 127, 145, 0.45);
+}
+
+.present-arrow,
+.present-play,
+.fullscreen-button {
+  color: #263744;
+  border-color: rgba(51, 65, 85, 0.22);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.present-arrow {
+  color: var(--cyan);
+}
+
+.present-arrow:hover,
+.present-play:hover,
+.fullscreen-button:hover {
+  border-color: rgba(0, 127, 145, 0.42);
+  background: #ffffff;
+}
+
+.present-timeline input {
+  background:
+    linear-gradient(
+      90deg,
+      var(--cyan) var(--timeline-progress),
+      rgba(71, 85, 105, 0.2) var(--timeline-progress)
+    );
+}
+
+.present-timeline input::-webkit-slider-thumb {
+  border-color: #ffffff;
+  background: var(--cyan);
+  box-shadow: 0 0 0 1px rgba(0, 127, 145, 0.42), 0 2px 8px rgba(51, 65, 85, 0.2);
+}
+
+.present-timeline-ticks span {
+  background: rgba(71, 85, 105, 0.42);
+}
+
+.fullscreen-button kbd {
+  color: #263744;
+  border-color: rgba(51, 65, 85, 0.24);
+  background: rgba(241, 245, 249, 0.9);
+}
+
+.title-slide::after {
+  border-color: rgba(159, 113, 18, 0.24);
+}
+
+.title-slide-logo {
+  border: 1px solid rgba(51, 65, 85, 0.12);
+  box-shadow: 0 16px 42px rgba(51, 65, 85, 0.16);
+}
+
+.title-slide-kicker {
+  color: #8b5a00;
+}
+
+.title-slide h1 {
+  color: #142033;
+}
+
+.author-portrait {
+  border-color: rgba(29, 100, 165, 0.26);
+  background: #e7edf4;
+  box-shadow: 0 14px 30px rgba(51, 65, 85, 0.16), 0 0 0 6px rgba(255, 255, 255, 0.55);
+}
+
+.author-card h2,
+.author-card.lead-author h2 {
+  color: #17212b;
+}
+
+.author-card.lead-author h2 {
+  text-decoration-color: #9f7112;
+}
+
+.title-controls {
+  border-top-color: rgba(51, 65, 85, 0.18);
+}
+
+.title-controls-rule {
+  background: linear-gradient(90deg, rgba(159, 113, 18, 0.48), rgba(29, 100, 165, 0.16));
+}
+
+.title-controls p {
+  color: #536473;
+}
+
+.title-controls p kbd {
+  color: #8b5a00;
+}
+
+.conclusion-takeaways article,
+.conclusion-thanks {
+  border-color: rgba(8, 120, 91, 0.26);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 14px 30px rgba(51, 65, 85, 0.13);
+}
+
+.conclusion-takeaways article > strong {
+  color: #17212b;
+}
+
+.conclusion-thanks {
+  border-color: rgba(169, 92, 11, 0.3);
+  background: linear-gradient(145deg, #fff8e9, #f2eee4);
+}
+
+.conclusion-thanks strong {
+  color: #5f3a00;
+}
