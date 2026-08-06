@@ -19,7 +19,7 @@ const SLIDE_STOPS = [
   [0, 0.32, 0.68, 1],
   [0, 0.25, 0.5, 0.75, 1],
 ] as const;
-const SCREEN_ORDER = [0, 2, 3, 1, 4, 5, 6, 7, 8, 9, 10] as const;
+const SCREEN_ORDER = [0, 2, 3, 4, 5, 1, 6, 7, 8, 9, 10] as const;
 const STEP_TRANSITION_MS = 720;
 
 type Point = { x: number; y: number };
@@ -3540,7 +3540,7 @@ export default function PresentPage() {
           </div>
         </div>
         <nav className="deck-tabs" aria-label="Presentation screens">
-          {["Title", "Classical bits", "Logical qubits", "Connectivity", "Why qLDPC", "Gate tradeoff", "Fixed couplers", "Park ’n Ride", "Parallel column", "Placement results", "Conclusion"].map((label, index) => (
+          {["Title", "Classical bits", "Logical qubits", "Why qLDPC", "Gate tradeoff", "Connectivity", "Fixed couplers", "Park ’n Ride", "Parallel column", "Placement results", "Conclusion"].map((label, index) => (
             <button
               key={label}
               className={screen === index ? "is-active" : ""}
