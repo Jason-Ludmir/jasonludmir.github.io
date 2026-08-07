@@ -1099,7 +1099,7 @@ function drawScalingComparison(canvas: HTMLCanvasElement, progress: number) {
     clamp(rowHeight * 0.38, 42, 58),
     bbReveal,
   );
-  topologyCaption(startX, bbY + rowHeight * 0.35, "gross · [[144,12,12]]", "12 physical qubits / logical", bbReveal);
+  topologyCaption(startX, bbY + rowHeight * 0.35, "gross · d=12", "12 physical qubits / logical", bbReveal);
   transitionArrow(bbY, bbScaleReveal);
   drawBicyclePatch(
     targetX + bbSlide,
@@ -1112,7 +1112,7 @@ function drawScalingComparison(canvas: HTMLCanvasElement, progress: number) {
   topologyCaption(
     targetX + bbSlide,
     bbY + rowHeight * 0.4,
-    "two-gross · [[288,12,18]]",
+    "two-gross · d=18",
     "24 physical qubits / logical",
     bbScaleReveal,
   );
