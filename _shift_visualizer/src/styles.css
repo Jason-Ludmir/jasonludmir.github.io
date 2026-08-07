@@ -2066,8 +2066,8 @@ footer p:last-child {
 .present-costs,
 .present-controls,
 .title-controls {
-  background: rgba(255, 255, 255, 0.82);
-  box-shadow: 0 -8px 28px rgba(51, 65, 85, 0.06);
+  background: transparent;
+  box-shadow: none;
 }
 
 .present-costs article > span,

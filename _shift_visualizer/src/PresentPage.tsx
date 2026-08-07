@@ -19,7 +19,22 @@ const SLIDE_STOPS = [
   [0, 0.32, 0.68, 1],
   [0, 0.25, 0.5, 0.75, 1],
 ] as const;
-const SCREEN_ORDER = [0, 2, 3, 4, 5, 1, 6, 7, 8, 9, 10] as const;
+// Content screen 5 (the logical-CNOT tradeoff slide) remains implemented below,
+// but is intentionally held out of this talk so it can be restored later.
+const SCREEN_ORDER = [0, 2, 3, 4, 1, 6, 7, 8, 9, 10] as const;
+const LAST_SCREEN = SCREEN_ORDER.length - 1;
+const DECK_LABELS = [
+  "Title",
+  "Classical bits",
+  "Logical qubits",
+  "Why qLDPC",
+  "Connectivity",
+  "Fixed couplers",
+  "Park ’n Ride",
+  "Parallel column",
+  "Placement results",
+  "Conclusion",
+] as const;
 const STEP_TRANSITION_MS = 720;
 
 type Point = { x: number; y: number };
@@ -2689,9 +2704,11 @@ function drawPlacementOrdering(canvas: HTMLCanvasElement, progress: number) {
     ctx.restore();
   };
 
-  const arbitrary = colors.amber;
-  const greedy = colors.blue;
-  const spectral = colors.green;
+  // Pastel source colors become crisp, projector-safe accents after the
+  // light-theme canvas filter: coral, blue, and teal respectively.
+  const arbitrary = "#ff9f91";
+  const greedy = "#8dbce8";
+  const spectral = "#78d7ba";
   const legendY = panelY + 70;
   const legendItems = [
     ["ARBITRARY", arbitrary],
@@ -3148,7 +3165,7 @@ export default function PresentPage() {
   const slideStops = SLIDE_STOPS[contentScreen];
   const finalStop = slideStops[slideStops.length - 1];
   const hasPreviousNavigation = screen > 0 || progress > slideStops[0] + 0.001;
-  const hasNextNavigation = screen < 10 || progress < finalStop - 0.001;
+  const hasNextNavigation = screen < LAST_SCREEN || progress < finalStop - 0.001;
   const timelinePosition = progressToTimelinePosition(progress, slideStops);
   const step = progress * TOTAL_STEPS;
   const phase =
@@ -3248,7 +3265,7 @@ export default function PresentPage() {
 
   const changeScreen = useCallback(
     (nextScreen: number, initialProgress = 0) => {
-      const bounded = Math.max(0, Math.min(10, nextScreen));
+      const bounded = Math.max(0, Math.min(LAST_SCREEN, nextScreen));
       if (bounded === screen) return;
       transitionRef.current = null;
       setScreen(bounded);
@@ -3272,7 +3289,7 @@ export default function PresentPage() {
     const nextStop = slideStops.find((stop) => stop > current + 0.012);
     if (nextStop !== undefined) {
       animateTo(nextStop);
-    } else if (screen < 10) {
+    } else if (screen < LAST_SCREEN) {
       changeScreen(screen + 1, 0);
     }
   }, [animateTo, changeScreen, screen, slideStops]);
@@ -3301,7 +3318,7 @@ export default function PresentPage() {
       }
       if (event.key === " ") {
         event.preventDefault();
-        if (screen === 0 || screen === 10) return;
+        if (contentScreen === 0 || contentScreen === 10) return;
         if (progressRef.current >= finalStop - 0.001) replay();
         else setPlaying((value) => !value);
       }
@@ -3315,7 +3332,7 @@ export default function PresentPage() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [advance, finalStop, replay, retreat, screen]);
+  }, [advance, contentScreen, finalStop, replay, retreat]);
 
   const cnotCount =
     step < 2
@@ -3347,7 +3364,7 @@ export default function PresentPage() {
   const titles = [
     {
       kicker: "Rice University",
-      title: "Hardware-Aware Compilation and Execution of Bivariate Bicycle Codes on Neutral-Atom Systems",
+      title: "Park-N-Ride: Compilation and Execution of Bivariate Bicycle Codes on Neutral-Atom Systems",
       primaryLabel: "",
       primaryValue: "",
       primaryNote: "",
@@ -3540,7 +3557,7 @@ export default function PresentPage() {
           </div>
         </div>
         <nav className="deck-tabs" aria-label="Presentation screens">
-          {["Title", "Classical bits", "Logical qubits", "Why qLDPC", "Gate tradeoff", "Connectivity", "Fixed couplers", "Park ’n Ride", "Parallel column", "Placement results", "Conclusion"].map((label, index) => (
+          {DECK_LABELS.map((label, index) => (
             <button
               key={label}
               className={screen === index ? "is-active" : ""}
@@ -3571,7 +3588,7 @@ export default function PresentPage() {
             </div>
             <p className="title-slide-kicker">40th SCI Summer Research Colloquium</p>
             <h1 id="presentation-title">
-              <em>Hardware-Aware Compilation and Execution of Bivariate Bicycle Codes on Neutral-Atom Systems</em>
+              <em>Park-N-Ride: Compilation and Execution of Bivariate Bicycle Codes on Neutral-Atom Systems</em>
             </h1>
             <div className="title-rule" aria-hidden="true" />
             <div className="author-row" aria-label="Authors">
@@ -3616,7 +3633,7 @@ export default function PresentPage() {
                               : "Complete Park-n-Ride architecture with compute, interaction, measurement, and T-state factory zones"
           }
         />}
-        {screen === 10 && (
+        {contentScreen === 10 && (
           <div className="conclusion-takeaways">
             <article style={{
               opacity: ease(progress / 0.25),
@@ -3675,8 +3692,8 @@ export default function PresentPage() {
         )}
       </section>
 
-      {screen === 0 || screen === 10 ? (
-        <footer className={`title-controls${screen === 10 ? " conclusion-controls" : ""}`}>
+      {contentScreen === 0 || contentScreen === 10 ? (
+        <footer className={`title-controls${contentScreen === 10 ? " conclusion-controls" : ""}`}>
           <span className="title-controls-rule" aria-hidden="true" />
           {screen === 0 && <p><kbd>→</kbd> Begin presentation</p>}
           <button
