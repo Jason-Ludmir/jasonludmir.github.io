@@ -2696,7 +2696,7 @@ function drawPlacementOrdering(canvas: HTMLCanvasElement, progress: number) {
           ctx.shadowBlur = 7;
         }
         ctx.fillStyle = item.color;
-        ctx.globalAlpha = item.label === "Spectral" ? alpha : alpha * 0.82;
+        ctx.globalAlpha = item.label === "Spectral" ? alpha : alpha * 0.96;
         ctx.fillRect(barX, barTop, Math.max(3, barWidth - 1.5), plotBottom - barTop);
         ctx.restore();
       });
@@ -2704,11 +2704,11 @@ function drawPlacementOrdering(canvas: HTMLCanvasElement, progress: number) {
     ctx.restore();
   };
 
-  // Pastel source colors become crisp, projector-safe accents after the
-  // light-theme canvas filter: coral, blue, and teal respectively.
-  const arbitrary = "#ff9f91";
-  const greedy = "#8dbce8";
-  const spectral = "#78d7ba";
+  // Darker source pigments render as brighter projector-safe accents after
+  // the light-theme canvas inversion: coral, sky blue, and mint-teal.
+  const arbitrary = "#8f3026";
+  const greedy = "#24517d";
+  const spectral = "#176650";
   const legendY = panelY + 70;
   const legendItems = [
     ["ARBITRARY", arbitrary],
