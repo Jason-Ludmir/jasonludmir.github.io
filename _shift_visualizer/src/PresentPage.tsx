@@ -2910,7 +2910,7 @@ function drawConclusionArchitecture(canvas: HTMLCanvasElement, _progress: number
   ctx.strokeStyle = "rgba(50,214,173,.23)";
   ctx.stroke();
   ctx.restore();
-  mono("COMPLETE ZONED ARCHITECTURE", outerX + 20, panelY + 25, 9.5, colors.green);
+  mono("PARK-N-RIDE ZONED ARCHITECTURE", outerX + 20, panelY + 25, 9.5, colors.green);
 
   // Global measurement/readout layer spans every compute column.
   ctx.save();
@@ -3656,12 +3656,16 @@ export default function PresentPage() {
               <span>03 · System-level design</span>
               <strong>Smart placement and coordinated motion make the system faster</strong>
             </article>
-            <div className="conclusion-thanks" style={{
+            <div className="conclusion-contact" style={{
               opacity: ease((progress - 0.75) / 0.25),
               transform: `translateY(${mix(16, 0, ease((progress - 0.75) / 0.25))}px)`,
             }}>
-              <strong>Thank you</strong>
-              <span>Questions?</span>
+              <strong>Questions?</strong>
+              <div className="conclusion-contact-details">
+                <span>Jason Ludmir</span>
+                <span>jzl2@rice.edu</span>
+                <span>jasonludmir.com</span>
+              </div>
             </div>
           </div>
         )}

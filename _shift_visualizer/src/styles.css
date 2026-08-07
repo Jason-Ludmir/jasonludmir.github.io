@@ -1287,24 +1287,24 @@ footer p:last-child {
 .conclusion-takeaways {
   position: absolute;
   z-index: 3;
-  right: clamp(68px, 7vw, 120px);
-  bottom: 14px;
-  left: clamp(68px, 7vw, 120px);
+  right: clamp(100px, 9vw, 170px);
+  bottom: 18px;
+  left: clamp(100px, 9vw, 170px);
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(130px, 0.58fr);
-  gap: 10px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
   pointer-events: none;
   transition: opacity 150ms linear, transform 150ms linear;
 }
 
 .conclusion-takeaways article,
-.conclusion-thanks {
+.conclusion-contact {
   min-width: 0;
-  min-height: 104px;
+  min-height: 132px;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 13px 15px;
+  padding: 16px 18px;
   border: 1px solid rgba(50, 214, 173, 0.22);
   border-radius: 10px;
   background: rgba(7, 26, 31, 0.91);
@@ -1335,27 +1335,28 @@ footer p:last-child {
   line-height: 1.42;
 }
 
-.conclusion-thanks {
+.conclusion-contact {
   align-items: center;
   border-color: rgba(255, 189, 102, 0.28);
   background: linear-gradient(145deg, rgba(69, 54, 25, 0.72), rgba(8, 29, 33, 0.92));
   text-align: center;
 }
 
-.conclusion-thanks strong {
+.conclusion-contact strong {
   color: #fff2cc;
   font-size: clamp(20px, 1.8vw, 30px);
   font-weight: 520;
   letter-spacing: -0.03em;
 }
 
-.conclusion-thanks span {
-  margin-top: 6px;
+.conclusion-contact-details {
+  display: grid;
+  gap: 3px;
+  margin-top: 10px;
   color: var(--amber);
   font-family: var(--font-geist-mono), ui-monospace, monospace;
-  font-size: 14px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  font-size: clamp(11px, 0.78vw, 14px);
+  line-height: 1.25;
 }
 
 .title-slide {
@@ -1803,9 +1804,9 @@ footer p:last-child {
   }
 
   .conclusion-takeaways article,
-  .conclusion-thanks {
-    min-height: 82px;
-    padding: 9px 11px;
+  .conclusion-contact {
+    min-height: 112px;
+    padding: 11px 13px;
   }
 
   .conclusion-takeaways article > span {
@@ -2210,7 +2211,7 @@ footer p:last-child {
 }
 
 .conclusion-takeaways article,
-.conclusion-thanks {
+.conclusion-contact {
   border-color: rgba(8, 120, 91, 0.26);
   background: rgba(255, 255, 255, 0.92);
   box-shadow: 0 14px 30px rgba(51, 65, 85, 0.13);
@@ -2220,11 +2221,11 @@ footer p:last-child {
   color: #17212b;
 }
 
-.conclusion-thanks {
+.conclusion-contact {
   border-color: rgba(169, 92, 11, 0.3);
   background: linear-gradient(145deg, #fff8e9, #f2eee4);
 }
 
-.conclusion-thanks strong {
+.conclusion-contact strong {
   color: #5f3a00;
 }
