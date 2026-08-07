@@ -1288,7 +1288,7 @@ footer p:last-child {
   position: absolute;
   z-index: 3;
   right: clamp(100px, 9vw, 170px);
-  bottom: 18px;
+  bottom: 8px;
   left: clamp(100px, 9vw, 170px);
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
