@@ -25,7 +25,7 @@ function render() {
   const fragment = document.createDocumentFragment();
   for (const row of matches.slice(start, end)) {
     const article = document.createElement('article'); article.className = 'result';
-    const sourceLabel = document.createElement('div'); sourceLabel.className = 'source'; sourceLabel.textContent = row.source === 'REF2021' ? 'REF 2021' : row.source;
+    const sourceLabel = document.createElement('div'); sourceLabel.className = 'source'; sourceLabel.textContent = row.source;
     const heading = document.createElement('h2'); heading.append(link(row.title, row.url));
     const meta = document.createElement('div'); meta.className = 'meta'; meta.textContent = [row.kind, row.institution, row.subject].filter(Boolean).join(' · ');
     article.append(sourceLabel, heading, meta);
